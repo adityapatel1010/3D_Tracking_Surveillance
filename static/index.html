@@ -1019,7 +1019,7 @@
                     const logEntry = document.createElement('div');
                     logEntry.className = 'log-entry';
 
-                    const config = EVENT_CONFIG[log.event_type] || { icon: '🔵', color: '#667eea' };
+                    const config = CONFIG.EVENT_TYPES[log.event_type] || { icon: '🔵', color: '#667eea' };
                     logEntry.style.borderLeftColor = config.color;
 
                     // Extract frame number and track ID from log message
