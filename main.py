@@ -421,8 +421,16 @@ async def process_video(
         
         logger.info("Starting reference-based tracking with depth estimation...")
         
+        # Get the current event loop to use in callback
+        loop = asyncio.get_event_loop()
+        
+        # Create a callback that works from executor thread
+        def sync_broadcast(data):
+            """Safely schedule broadcast from executor thread"""
+            asyncio.run_coroutine_threadsafe(broadcast_status(data), loop)
+        
         # Process video with reference object
-        video_detections, tracked_people = await asyncio.get_event_loop().run_in_executor(
+        video_detections, tracked_people = await loop.run_in_executor(
             None,
             lambda: ref_detector.process_video(
                 video_path=str(video_path),
@@ -430,7 +438,7 @@ async def process_video(
                 depth_estimator=depth_estimator,
                 check_interval=check_interval,
                 initial_frame=initial_frame,
-                broadcast_callback=lambda data: asyncio.create_task(broadcast_status(data))
+                broadcast_callback=sync_broadcast
             )
         )
         
