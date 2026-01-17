@@ -184,14 +184,16 @@ class DistanceBasedTracker:
                 current_person = self.tracked_people[self.current_active_person]
                 
                 # Check if current person is moving away (distance increasing)
-                if len(current_person.distance_history) >= 3:
-                    recent_distances = list(current_person.distance_history)[-3:]
+                # Use more frames for stability (5 instead of 3)
+                if len(current_person.distance_history) >= 5:
+                    recent_distances = list(current_person.distance_history)[-5:]
                     # Check if distance is generally increasing
                     increasing_count = sum(
                         1 for i in range(len(recent_distances) - 1)
                         if recent_distances[i+1] > recent_distances[i]
                     )
-                    is_moving_away = increasing_count >= 2
+                    # Require at least 3 out of 4 transitions to be increasing
+                    is_moving_away = increasing_count >= 3
                 else:
                     is_moving_away = False
                 

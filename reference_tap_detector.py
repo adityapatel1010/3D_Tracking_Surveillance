@@ -326,26 +326,22 @@ def visualize_reference_tracking(video_path: str,
             cv2.putText(frame, "REFERENCE", (ref_x - 40, ref_y - 20),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
             
-            # Draw all people as light boxes
-            for detection in det['all_detections']:
-                x1, y1, x2, y2 = map(int, detection['bbox'])
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (200, 200, 200), 1)
-            
-            # Draw active person with emphasis
+            # Draw ONLY the active person with their colored bounding box
             if det['active_person'] is not None:
                 person_id = det['active_person']
                 if person_id in tracked_people:
                     person = tracked_people[person_id]
                     x1, y1, x2, y2 = map(int, det['active_bbox'])
                     
-                    # Bold bounding box
+                    # Draw colored bounding box (thick)
                     cv2.rectangle(frame, (x1, y1), (x2, y2), person.color, 4)
                     
-                    # Label with distance
+                    # Create label with distance
                     label = f"{person.color_name} - {det['active_distance']:.3f}m"
                     if person.has_tapped:
                         label += " [TAPPED]"
                     
+                    # Draw label with person's color
                     cv2.putText(frame, label, (x1, y1 - 10),
                               cv2.FONT_HERSHEY_SIMPLEX, 0.7, person.color, 2)
                     
