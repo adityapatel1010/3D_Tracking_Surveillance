@@ -948,7 +948,7 @@
                 let thumbnailHTML = '';
                 if (state.currentExperimentFolder) {
                     // Try to find a frame image for this person
-                    const frameFilename = `frame_${String(person.first_seen_frame).padStart(6, '0')}_person_${person.track_id}.png`;
+                    const frameFilename = `person_${person.track_id}.png`;
                     const frameURL = `${API_URL}/api/frame/${state.currentExperimentFolder}/${frameFilename}`;
                     thumbnailHTML = `<img src="${frameURL}" class="frame-thumbnail" onclick="showFrameModal('${frameURL}')" onerror="this.style.display='none'" alt="Frame ${person.first_seen_frame}" title="Click to enlarge">`;
                 }
@@ -1034,7 +1034,7 @@
                     // Generate frame thumbnail if we have the data and experiment folder
                     let thumbnailHTML = '';
                     if (state.currentExperimentFolder && frameNumber && trackId) {
-                        const frameFilename = `frame_${String(frameNumber).padStart(6, '0')}_person_${trackId}.png`;
+                        const frameFilename = `person_${trackId}.png`;
                         const frameURL = `${API_URL}/api/frame/${state.currentExperimentFolder}/${frameFilename}`;
                         thumbnailHTML = `<img src="${frameURL}" class="log-thumbnail" onclick="showFrameModal('${frameURL}')" onerror="this.style.display='none'" alt="Frame ${frameNumber}" title="Click to enlarge - Frame ${frameNumber}">`;
                     }
