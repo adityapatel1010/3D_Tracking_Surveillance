@@ -415,21 +415,23 @@ class SmolVLMTapDetector:
         colors_list = ", ".join(colors_order)  # Variable: Comma-separated colors (e.g., "RED, BLUE")
 
         # 1. SYSTEM PROMPT
-        system_prompt = """You are an AI security analyst detecting fare payment events in video frames.
-        Your task is to analyze the provided images and determine if a person in the bounding box TAPPED a payment terminal.
+        system_prompt = """You are a video analysis AI.
+        TASK: Analyze the provided images and determine if a person in the bounding box TAPPED a payment terminal.
         DEFINITIONS:
-        - TAP (true): The person's hand, phone, or card approaches the card reader.
-        - NO TAP (false): Standing near, walking past, reaching elsewhere, or ambiguous movements.
+        - True : The person's hand, phone, or card approaches the card reader.
+        - False : Standing near, walking past, reaching elsewhere, or ambiguous movements.
         
-        OUTPUT REQUIREMENTS:
-        - Output ONLY a valid JSON object.
-        - The keys must color of the bounding box.
-        - The values must be booleans (true or false).
-        - Do not add markdown syntax, explanations, or extra text."""
+        OUTPUT FORMAT: JSON only.
+        KEYS: Exact color name (e.g. "Red").
+        VALUES: boolean (true/false).
+        
+        EXAMPLE: 
+        {"Red": true}"""
 
         # 2. USER PROMPT
-        user_prompt = f"""Analyze these {num_frames} frames.
-        JSON Output:"""
+        user_prompt = f"""Process these {num_frames} frames.
+        Colors: {colors_list}.
+        Return JSON object with results."""
 
         # Construct messages - PREPEND system prompt to user content for better compatibility
         # Many vision models treat 'system' roles inconsistently, so explicit prepending is safer
