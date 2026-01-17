@@ -750,7 +750,7 @@ async def health_check():
 async def get_frame_image(experiment_folder: str, frame_filename: str):
     """Serve a specific frame image from an experiment folder"""
     try:
-        frame_path = EXPERIMENTS_DIR / experiment_folder / "annotated_frames" / frame_filename
+        frame_path = "./experiments/"+experiment_folder+ "annotated_frames/" + frame_filename
         
         logger.info(f"📷 Frame requested: {frame_filename} from {experiment_folder}")
         logger.info(f"   Full path: {frame_path}")

@@ -278,7 +278,7 @@ class EventLogger:
             
             # Convert to BGR and save
             frame_bgr = cv2.cvtColor(frame_with_bbox, cv2.COLOR_RGB2BGR)
-            frame_filename = f"person_{track_id}_{color_name}_frame_{str(frame_number).zfill(6)}.png"
+            frame_filename = f"frame_{str(frame_number).zfill(6)}_person_{track_id}.png"
             frame_path = self.frames_folder / frame_filename
             
             # Ensure folder exists (critical!)
