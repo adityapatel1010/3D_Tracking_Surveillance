@@ -553,7 +553,7 @@ async def process_video(
             "summary": results["summary"],
             "processing_params": {
                 "conf_threshold": conf_threshold,
-                "distance_threshold": distance_threshold,
+                "zone_radius": zone_radius,
                 "check_interval": check_interval,
                 "initial_frame": initial_frame
             },
