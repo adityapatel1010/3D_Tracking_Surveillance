@@ -250,6 +250,10 @@ class ReferenceBasedTapDetector:
                             color_name=active_person.color_name,
                             frame_number=frame_number
                         )
+                        # Highlighting tap in terminal
+                        print(f"\n{('='*50)}")
+                        print(f"✅  TAP DETECTED: Person {active_person.track_id} ({active_person.color_name})")
+                        print(f"{('='*50)}\n")
                     
                     # Reset accumulation
                     frames_to_check = []
