@@ -53,10 +53,11 @@ class PersonTrackingInfo:
                 1 for i in range(len(recent_distances) - 1)
                 if recent_distances[i+1] < recent_distances[i]
             )
-            self.is_approaching = decreasing_count >= 2
+            # Consider approaching if: distance is decreasing OR already very close
+            self.is_approaching = (decreasing_count >= 1) or (distance < 0.2)
         else:
-            # Not enough history, assume approaching if close
-            self.is_approaching = distance < 0.5
+            # Not enough history, assume approaching if reasonably close
+            self.is_approaching = distance < 1.0
     
     def increment_unseen(self):
         """Increment frames since last seen."""

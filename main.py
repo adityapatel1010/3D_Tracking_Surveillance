@@ -371,7 +371,7 @@ async def process_video(
     frames_per_check: int = 3,
     check_interval: int = 30,
     initial_frame: int = 0,
-    distance_threshold: float = 0.3
+    distance_threshold: float = 0.5  # Increased from 0.3 to 0.5 meters
 ):
     """Process uploaded video with reference object-based tracking"""
     try:
