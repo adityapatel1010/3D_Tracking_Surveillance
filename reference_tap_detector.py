@@ -108,6 +108,7 @@ class ReferenceBasedTapDetector:
         cap.set(cv2.CAP_PROP_POS_FRAMES, initial_frame)
         
         current_active_person = None
+        self.last_active_id = None  # Track for activation snapshots
         frames_since_last_check = 0
         
         logger.info("🎯 Starting frame-by-frame processing...")
@@ -165,13 +166,44 @@ class ReferenceBasedTapDetector:
                         color_rgb=active_person.color
                     )
             
-            # Store detection data for visualization
+            # Store detection data for visualization - Store metadata DIRECTLY to avoid lookup issues later
             video_detections[frame_number] = {
                 'all_detections': detections,
                 'active_person': active_person.track_id if active_person else None,
                 'active_bbox': active_person.bbox if active_person else None,
-                'active_distance': active_person.current_distance if active_person else None
+                'active_distance': active_person.current_distance if active_person else None,
+                'active_color': active_person.color if active_person else None,
+                'active_color_name': active_person.color_name if active_person else None
             }
+            
+            # Save snapshot if person just became active
+            if active_person:
+                current_id = active_person.track_id
+                if current_id != self.last_active_id:
+                    # New activation! Save snapshot
+                    timestamp = datetime.now().strftime("%H%M%S")
+                    filename = f"activation_id{current_id}_{active_person.color_name}_frame{frame_number}.png"
+                    filepath = self.event_logger.experiment_folder / "activations" / filename
+                    
+                    # Ensure directory exists
+                    filepath.parent.mkdir(exist_ok=True)
+                    
+                    # Draw bounding box on snapshot
+                    snapshot = frame.copy()
+                    x1, y1, x2, y2 = map(int, active_person.bbox)
+                    cv2.rectangle(snapshot, (x1, y1), (x2, y2), active_person.color, 4)
+                    
+                    # Draw label with CM distance
+                    dist_cm = active_person.current_distance * 100
+                    cv2.putText(snapshot, f"ACTIVE: {active_person.color_name} ({dist_cm:.0f}cm)", (x1, y1-10), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.8, active_person.color, 2)
+                    
+                    cv2.imwrite(str(filepath), snapshot)
+                    logger.info(f"📸 Saved activation snapshot: {filename}")
+                    
+                self.last_active_id = current_id
+            else:
+                self.last_active_id = None
             
             # Check if we should analyze with VLM
             if active_person and not active_person.has_tapped:
@@ -347,7 +379,36 @@ def visualize_reference_tracking(video_path: str,
             if det['active_person'] is not None:
                 frames_with_active += 1
                 person_id = det['active_person']
-                if person_id in tracked_people:
+                
+                # Use stored metadata directly - reliable even if person removed from tracker later
+                if 'active_color' in det and det['active_color'] is not None:
+                    color = det['active_color']
+                    color_name = det['active_color_name']
+                    x1, y1, x2, y2 = map(int, det['active_bbox'])
+                    is_tapped = det.get('is_tapped', False)
+                    
+                    # Draw colored bounding box (thick)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 4)
+                    boxes_drawn_count += 1
+                    
+                    # Create label with distance (cm)
+                    dist_cm = det['active_distance'] * 100
+                    label = f"{color_name} - {dist_cm:.0f}cm"
+                    if is_tapped:
+                        label += " [TAPPED]"
+                    
+                    # Draw label with person's color
+                    cv2.putText(frame, label, (x1, y1 - 10),
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                    
+                    # Draw line from person to reference
+                    person_cx = (x1 + x2) // 2
+                    person_cy = (y1 + y2) // 2
+                    cv2.line(frame, (person_cx, person_cy), (ref_x, ref_y),
+                           color, 2)
+                
+                # Fallback for old logs (should not happen with new code)
+                elif person_id in tracked_people:
                     person = tracked_people[person_id]
                     x1, y1, x2, y2 = map(int, det['active_bbox'])
                     
@@ -356,7 +417,8 @@ def visualize_reference_tracking(video_path: str,
                     boxes_drawn_count += 1
                     
                     # Create label with distance
-                    label = f"{person.color_name} - {det['active_distance']:.3f}m"
+                    dist_cm = det['active_distance'] * 100
+                    label = f"{person.color_name} - {dist_cm:.0f}cm"
                     if person.has_tapped:
                         label += " [TAPPED]"
                     
