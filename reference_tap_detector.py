@@ -314,8 +314,8 @@ Answer with ONLY "YES" or "NO"."""
                 frame_numbers=[0]
             )
             
-            # Parse response
-            if person.track_id in response and response[person.track_id].get('tapped'):
+            # Parse response - Update legacy key check
+            if person.track_id in response and response[person.track_id].get('is_tapping'):
                 return True
             
         except Exception as e:

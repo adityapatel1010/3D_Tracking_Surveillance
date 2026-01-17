@@ -418,7 +418,7 @@ class SmolVLMTapDetector:
         system_prompt = """You are an AI security analyst detecting fare payment events in video frames.
         Your task is to analyze the provided images and determine if a person TAPPED a payment terminal.
         DEFINITIONS:
-        - TAP (true): The person's hand, phone, or card approaches the card reader (within 2 cm) in a deliberate payment gesture.
+        - TAP (true): The person's hand, phone, or card approaches the card reader in a deliberate payment gesture.
         - NO TAP (false): Standing near, walking past, reaching elsewhere, or ambiguous movements.
         
         OUTPUT REQUIREMENTS:
@@ -435,33 +435,32 @@ class SmolVLMTapDetector:
         For each color, output 'true' if they tapped, or 'false' if they did not.
         JSON Output:"""
 
-        content.append({"type": "text", "text": user_prompt})
+        # Construct messages - PREPEND system prompt to user content for better compatibility
+        # Many vision models treat 'system' roles inconsistently, so explicit prepending is safer
+        combined_text = system_prompt + "\n\n" + user_prompt
+        
+        # Replace the separate user_prompt text entry with combined text
+        # Remove the last added element (which was user_prompt)
+        content_for_msg = content[:-1]
+        content_for_msg.insert(0, {"type": "text", "text": combined_text})
         
         # Log VLM call if logger is provided
         if event_logger:
-            event_logger.log_vlm_call(check_number, frame_numbers or list(range(len(frames))), person_colors, user_prompt)
+            event_logger.log_vlm_call(check_number, frame_numbers or list(range(len(frames))), person_colors, combined_text)
 
-        # Construct messages with System and User roles
         messages = [
             {
-                "role": "system",
-                "content": [{"type": "text", "text": system_prompt}]
-            },
-            {
                 "role": "user",
-                "content": content
+                "content": content_for_msg
             }
         ]
         
         try:
             prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
         except Exception as e:
-            # Fallback if system role not supported by template: prepend to user
-            print(f"⚠️ System role not directly supported, prepending to user prompt. Error: {e}")
-            sys_text = system_prompt + "\n\n"
-            content.insert(0, {"type": "text", "text": sys_text})
-            messages = [{"role": "user", "content": content}]
-            prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
+            print(f"⚠️ Chat template application failed: {e}")
+            # Fallback manual construction if template fails
+            prompt = combined_text
 
         inputs = self.processor(text=prompt, images=pil_frames, return_tensors="pt")
 
