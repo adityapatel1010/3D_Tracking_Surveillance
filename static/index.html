@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,7 +33,7 @@
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .header p {
@@ -45,7 +46,7 @@
             border-radius: 15px;
             padding: 30px;
             margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
 
         .upload-section {
@@ -182,7 +183,7 @@
             padding: 20px;
             border-radius: 10px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .stat-value {
@@ -205,8 +206,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .person-info {
@@ -214,77 +214,45 @@
             align-items: center;
             gap: 15px;
             flex: 1;
-            min-width: 0;
-        }
-
-        .frame-thumbnail-container {
-            flex-shrink: 0;
-            position: relative;
         }
 
         .frame-thumbnail {
-            width: 150px;
-            height: 100px;
+            width: 120px;
+            height: 80px;
             object-fit: cover;
-            border-radius: 8px;
-            border: 3px solid #667eea;
+            border-radius: 5px;
+            border: 2px solid #ddd;
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: block;
+            transition: transform 0.2s;
         }
 
         .frame-thumbnail:hover {
             transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .frame-thumbnail-placeholder {
-            width: 150px;
-            height: 100px;
-            border-radius: 8px;
-            border: 2px dashed #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9ff;
-            color: #999;
-            font-size: 0.85em;
-            text-align: center;
-            padding: 10px;
+            border-color: #667eea;
         }
 
         .color-indicator {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             border: 3px solid #ddd;
-            flex-shrink: 0;
-        }
-
-        .person-details {
-            flex: 1;
-            min-width: 0;
         }
 
         .person-details h4 {
             margin-bottom: 5px;
             color: #333;
-            font-size: 1.1em;
         }
 
         .person-details p {
             color: #666;
             font-size: 0.9em;
-            line-height: 1.4;
         }
 
         .status-badge {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 20px;
             font-weight: bold;
-            font-size: 0.95em;
-            white-space: nowrap;
-            flex-shrink: 0;
+            font-size: 0.9em;
         }
 
         .status-tapped {
@@ -302,7 +270,6 @@
             gap: 10px;
             justify-content: center;
             margin-top: 20px;
-            flex-wrap: wrap;
         }
 
         .live-events-section {
@@ -356,6 +323,7 @@
                 opacity: 0;
                 transform: translateX(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -363,8 +331,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
         }
 
         .logs-section {
@@ -383,29 +358,28 @@
             border-left: 3px solid #667eea;
             font-size: 0.9em;
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: flex-start;
         }
 
         .log-thumbnail {
-            width: 100px;
-            height: 75px;
+            width: 80px;
+            height: 60px;
             object-fit: cover;
-            border-radius: 5px;
-            border: 2px solid #667eea;
+            border-radius: 3px;
+            border: 2px solid #ddd;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform 0.2s;
             flex-shrink: 0;
         }
 
         .log-thumbnail:hover {
-            transform: scale(1.1);
-            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+            transform: scale(1.05);
+            border-color: #667eea;
         }
 
         .log-text-content {
             flex: 1;
-            min-width: 0;
         }
 
         .log-timestamp {
@@ -443,8 +417,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .loading-spinner {
@@ -495,33 +474,29 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.95);
+            background-color: rgba(0, 0, 0, 0.9);
             animation: fadeIn 0.3s;
         }
 
         .modal-content {
             margin: auto;
             display: block;
-            max-width: 95%;
-            max-height: 95%;
+            max-width: 90%;
+            max-height: 90%;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            border: 3px solid #667eea;
-            border-radius: 10px;
         }
 
         .close-modal {
             position: absolute;
-            top: 15px;
+            top: 20px;
             right: 35px;
             color: #f1f1f1;
-            font-size: 50px;
+            font-size: 40px;
             font-weight: bold;
             cursor: pointer;
-            z-index: 1001;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
         .close-modal:hover {
@@ -529,27 +504,17 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @media (max-width: 768px) {
-            .person-card {
-                flex-direction: column;
-                align-items: flex-start;
+            from {
+                opacity: 0;
             }
 
-            .frame-thumbnail {
-                width: 100%;
-                max-width: 300px;
-            }
-
-            .stat-grid {
-                grid-template-columns: 1fr;
+            to {
+                opacity: 1;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -559,7 +524,7 @@
 
         <div class="card upload-section">
             <h2 style="margin-bottom: 20px; color: #333;">Upload Video</h2>
-            
+
             <div class="upload-area" id="uploadArea">
                 <div class="upload-icon">📹</div>
                 <div class="upload-text">Drag & drop your video here</div>
@@ -569,7 +534,7 @@
 
             <div id="fileInfo" style="display: none; margin-bottom: 20px;">
                 <div class="alert alert-info">
-                    <strong>Selected:</strong> <span id="fileName"></span> 
+                    <strong>Selected:</strong> <span id="fileName"></span>
                     (<span id="fileSize"></span> MB)
                 </div>
             </div>
@@ -614,8 +579,8 @@
         </div>
 
         <div class="card results-section" id="resultsSection">
-            <h2 style="margin-bottom: 20px; color: #333;">📊 Detection Results</h2>
-            
+            <h2 style="margin-bottom: 20px; color: #333;">Detection Results</h2>
+
             <div class="stat-grid">
                 <div class="stat-item">
                     <div class="stat-value" id="totalPeople">0</div>
@@ -632,13 +597,24 @@
             </div>
 
             <div class="result-card">
-                <div class="result-header">🎯 Individual Detection Results with Bounding Boxes</div>
+                <div class="result-header">Individual Results</div>
                 <div id="peopleList"></div>
             </div>
 
             <div class="download-buttons">
                 <button class="btn" id="downloadVideoBtn">📥 Download Video</button>
                 <button class="btn btn-secondary" id="downloadResultsBtn">📊 Download Results JSON</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px; color: #333;">📋 Event History</h2>
+            <div id="logFileInfo"
+                style="margin-bottom: 10px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 0.9em; color: #666;">
+                <strong>Log File:</strong> <span id="logFileName">No events yet</span>
+            </div>
+            <div class="logs-section" id="logsSection">
+                <p style="text-align: center; color: #888;">No event logs yet</p>
             </div>
         </div>
     </div>
@@ -649,26 +625,29 @@
         <img class="modal-content" id="modalImage">
     </div>
 
+    <!-- Reference Object Selection Script -->
+    <script src="/static/reference_selector.js"></script>
+
     <script>
         // ============================================================================
         // CONFIGURATION
         // ============================================================================
-        
+
         const CONFIG = {
             // Server configuration
             DEFAULT_PORT: 8501,
             ALTERNATE_PORT: 8000,
-            
+
             // WebSocket configuration
             WS_RECONNECT_DELAY: 3000,
             WS_PING_INTERVAL: 30000,
-            
+
             // Frame display configuration
-            RESULT_FRAME_WIDTH: 150,
-            RESULT_FRAME_HEIGHT: 100,
-            HISTORY_FRAME_WIDTH: 100,
-            HISTORY_FRAME_HEIGHT: 75,
-            
+            RESULT_FRAME_WIDTH: 120,
+            RESULT_FRAME_HEIGHT: 80,
+            HISTORY_FRAME_WIDTH: 80,
+            HISTORY_FRAME_HEIGHT: 60,
+
             // Event type configuration
             EVENT_TYPES: {
                 'initial_detection': { icon: '🆕', color: '#17a2b8' },
@@ -676,14 +655,14 @@
                 'tap_detected': { icon: '✅', color: '#28a745' }
             }
         };
-        
+
         // ============================================================================
         // API URL DETECTION
         // ============================================================================
-        
+
         function detectAPIUrls() {
             let apiUrl, wsUrl;
-            
+
             if (window.location.hostname.includes('proxy.runpod.net')) {
                 // RunPod proxy URL - replace port 8000 with 8501
                 apiUrl = window.location.origin.replace(`-${CONFIG.ALTERNATE_PORT}.`, `-${CONFIG.DEFAULT_PORT}.`);
@@ -697,46 +676,37 @@
                 apiUrl = window.location.origin;
                 wsUrl = `ws://${window.location.host}/ws`;
             }
-            
+
             return { apiUrl, wsUrl };
         }
-        
+
         const { apiUrl: API_URL, wsUrl: WS_URL } = detectAPIUrls();
-        
-        console.log('🌐 API URL:', API_URL);
-        console.log('🔌 WebSocket URL:', WS_URL);
-        
+
+        console.log('API URL:', API_URL);
+        console.log('WebSocket URL:', WS_URL);
+
         // ============================================================================
         // STATE MANAGEMENT
         // ============================================================================
-        
+
+
         const state = {
             uploadedFilename: '',
             ws: null,
             currentExperimentFolder: null,
-            // Real-time detection results
-            detectedPeople: new Map(), // Map<track_id, person_data>
-            analytics: {
-                totalPeople: 0,
-                peopleTapped: 0,
-                peopleNotTapped: 0
-            }
+            referenceSelector: null  // Will hold ReferenceObjectSelector instance
         };
 
         // ============================================================================
         // WEBSOCKET CONNECTION
         // ============================================================================
-        
+
         function connectWebSocket() {
             state.ws = new WebSocket(WS_URL);
-            
-            state.ws.onopen = () => {
-                console.log('✅ WebSocket connected');
-            };
-            
+
             state.ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                
+
                 if (data.type === 'event') {
                     handleEventUpdate(data);
                 } else if (data.type === 'ping') {
@@ -747,17 +717,17 @@
             };
 
             state.ws.onerror = (error) => {
-                console.error('❌ WebSocket error:', error);
+                console.error('WebSocket error:', error);
             };
 
             state.ws.onclose = () => {
-                console.log('🔄 WebSocket closed, reconnecting...');
+                console.log('WebSocket closed, reconnecting...');
                 setTimeout(connectWebSocket, CONFIG.WS_RECONNECT_DELAY);
             };
         }
 
         connectWebSocket();
-        
+
         // ============================================================================
         // EVENT HANDLING
         // ============================================================================
@@ -775,213 +745,36 @@
         function handleEventUpdate(data) {
             const liveEventsCard = document.getElementById('liveEventsCard');
             const liveEventsFeed = document.getElementById('liveEventsFeed');
-            
+
             liveEventsCard.style.display = 'block';
-            
+
             if (liveEventsFeed.querySelector('p')) {
                 liveEventsFeed.innerHTML = '';
             }
-            
+
             const eventItem = document.createElement('div');
             eventItem.className = `event-item realtime ${data.event_type.replace('_', '-')}`;
-            
+
             const config = CONFIG.EVENT_TYPES[data.event_type] || { icon: '🔵', color: '#667eea' };
             const eventText = getEventText(data.event_type, data);
-            
+
             eventItem.innerHTML = `
                 <div class="event-timestamp">${data.timestamp} <span style="color: #28a745; font-weight: bold;">● LIVE</span></div>
                 <div class="event-message">${config.icon} ${eventText}</div>
             `;
-            
+
             // Add to top of feed
             liveEventsFeed.insertBefore(eventItem, liveEventsFeed.firstChild);
-            
+
             // Keep only last 20 events
             while (liveEventsFeed.children.length > 20) {
                 liveEventsFeed.removeChild(liveEventsFeed.lastChild);
             }
-            
-            // Update experiment folder if provided
-            if (data.experiment_folder) {
-                state.currentExperimentFolder = data.experiment_folder;
-                console.log('📁 Experiment folder updated:', state.currentExperimentFolder);
-            }
-            
-            // Handle real-time results updates
-            if (data.person_data) {
-                // New person detected
-                addOrUpdatePerson(data.person_data);
-            } else if (data.person_update) {
-                // Person tapped - update existing person
-                updatePersonTapStatus(data.person_update);
-            }
-            
-            console.log('📢 Real-time event received:', data);
-        }
 
-        // ============================================================================
-        // REAL-TIME RESULTS MANAGEMENT
-        // ============================================================================
+            // Also reload the event history logs
+            loadLogs();
 
-        function addOrUpdatePerson(personData) {
-            console.log('➕ Adding/updating person:', personData);
-            
-            // Add or update person in state
-            state.detectedPeople.set(personData.track_id, personData);
-            
-            // Update analytics
-            updateAnalytics();
-            
-            // Show results section
-            document.getElementById('resultsSection').style.display = 'block';
-            
-            // Render the person in the UI
-            renderPerson(personData);
-        }
-
-        function updatePersonTapStatus(updateData) {
-            console.log('✅ Updating tap status:', updateData);
-            
-            const person = state.detectedPeople.get(updateData.track_id);
-            if (person) {
-                person.tapped = updateData.tapped;
-                person.tap_frame = updateData.tap_frame;
-                
-                // Update analytics
-                updateAnalytics();
-                
-                // Re-render the person card
-                renderPerson(person);
-            }
-        }
-
-        function updateAnalytics() {
-            const people = Array.from(state.detectedPeople.values());
-            state.analytics.totalPeople = people.length;
-            state.analytics.peopleTapped = people.filter(p => p.tapped).length;
-            state.analytics.peopleNotTapped = people.length - state.analytics.peopleTapped;
-            
-            // Update UI
-            document.getElementById('totalPeople').textContent = state.analytics.totalPeople;
-            document.getElementById('peopleTapped').textContent = state.analytics.peopleTapped;
-            document.getElementById('peopleNotTapped').textContent = state.analytics.peopleNotTapped;
-        }
-
-        function renderPerson(person) {
-            const peopleList = document.getElementById('peopleList');
-            
-            // Check if person card already exists
-            let personCard = document.getElementById(`person-${person.track_id}`);
-            
-            if (!personCard) {
-                // Create new card
-                personCard = document.createElement('div');
-                personCard.id = `person-${person.track_id}`;
-                personCard.className = 'person-card';
-                peopleList.appendChild(personCard);
-            }
-            
-            const rgb = `rgb(${person.color_rgb.join(',')})`;
-            const statusClass = person.tapped ? 'status-tapped' : 'status-not-tapped';
-            const statusText = person.tapped ? '✅ TAPPED' : '⏳ WAITING';
-            const tapFrameInfo = person.tapped ? ` | Tapped at frame ${person.tap_frame}` : '';
-            const firstSeenInfo = `First detected at frame ${person.first_seen_frame}`;
-            const frameInfo = person.total_frames_tracked > 0 ? ` | Tracked for ${person.total_frames_tracked} frames` : '';
-
-            // Generate frame thumbnail URL with bounding box
-            let frameHTML = '';
-            if (state.currentExperimentFolder && person.first_seen_frame !== undefined) {
-                const frameFilename = `frame_${String(person.first_seen_frame).padStart(6, '0')}_person_${person.track_id}.png`;
-                const frameURL = `${API_URL}/api/frame/${state.currentExperimentFolder}/${frameFilename}`;
-                
-                console.log(`🖼️ Loading frame for Person ${person.track_id}: ${frameURL}`);
-                
-                frameHTML = `
-                    <div class="frame-thumbnail-container">
-                        <img 
-                            src="${frameURL}" 
-                            class="frame-thumbnail" 
-                            id="frame-img-${person.track_id}"
-                            onclick="showFrameModal('${frameURL}')" 
-                            onerror="handleImageError(this, '${frameURL}', ${person.track_id}, 0)"
-                            alt="Detection frame ${person.first_seen_frame}" 
-                            title="Click to enlarge - First detection at frame ${person.first_seen_frame}"
-                            loading="eager"
-                        >
-                    </div>
-                `;
-            } else {
-                console.warn(`⚠️ Missing data for Person ${person.track_id}: experimentFolder=${state.currentExperimentFolder}, first_seen_frame=${person.first_seen_frame}`);
-                frameHTML = `
-                    <div class="frame-thumbnail-placeholder">
-                        Loading<br>frame...
-                    </div>
-                `;
-            }
-
-            personCard.innerHTML = `
-                ${frameHTML}
-                <div class="person-info">
-                    <div class="color-indicator" style="background: ${rgb};"></div>
-                    <div class="person-details">
-                        <h4>👤 ${person.color} Box (ID: ${person.track_id})</h4>
-                        <p>${firstSeenInfo}${frameInfo}${tapFrameInfo}</p>
-                    </div>
-                </div>
-                <div class="status-badge ${statusClass}">${statusText}</div>
-            `;
-            
-            // Add pulse animation for newly tapped
-            if (person.tapped) {
-                personCard.style.animation = 'pulse 0.5s ease';
-                setTimeout(() => {
-                    personCard.style.animation = '';
-                }, 500);
-            }
-        }
-
-        // Handle image loading errors with retry logic
-        function handleImageError(imgElement, imageUrl, personId, retryCount) {
-            const maxRetries = 5;
-            const retryDelay = 1000; // 1 second
-            
-            console.warn(`⚠️ Image load failed for Person ${personId} (retry ${retryCount}/${maxRetries}): ${imageUrl}`);
-            
-            if (retryCount < maxRetries) {
-                // Show loading state
-                imgElement.parentElement.innerHTML = `
-                    <div class="frame-thumbnail-placeholder">
-                        Loading<br>frame...<br>
-                        <small>(retry ${retryCount + 1}/${maxRetries})</small>
-                    </div>
-                `;
-                
-                // Retry after delay
-                setTimeout(() => {
-                    const container = document.querySelector(`#person-${personId} .frame-thumbnail-container`);
-                    if (container) {
-                        container.innerHTML = `
-                            <img 
-                                src="${imageUrl}?t=${Date.now()}" 
-                                class="frame-thumbnail" 
-                                onclick="showFrameModal('${imageUrl}')" 
-                                onerror="handleImageError(this, '${imageUrl}', ${personId}, ${retryCount + 1})"
-                                alt="Detection frame" 
-                                title="Click to enlarge"
-                                loading="eager"
-                            >
-                        `;
-                    }
-                }, retryDelay * (retryCount + 1)); // Exponential backoff
-            } else {
-                // Give up after max retries
-                console.error(`❌ Failed to load image for Person ${personId} after ${maxRetries} retries`);
-                imgElement.parentElement.innerHTML = `
-                    <div class="frame-thumbnail-placeholder">
-                        Image not<br>available
-                    </div>
-                `;
-            }
+            console.log('Real-time event received:', data);
         }
 
         // File upload handling
@@ -1006,7 +799,7 @@
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadArea.classList.remove('dragging');
-            
+
             if (e.dataTransfer.files.length > 0) {
                 fileInput.files = e.dataTransfer.files;
                 handleFileSelect();
@@ -1047,14 +840,24 @@
 
                 if (data.status === 'success') {
                     state.uploadedFilename = data.filename;
-                    showAlert('success', `✅ Video uploaded successfully! (${data.file_size_mb} MB)`);
-                    processBtn.disabled = false;
+                    showAlert('success', `Video uploaded successfully! (${data.file_size_mb} MB)`);
                     hideProgress();
+
+                    // Initialize reference selector if not already done
+                    if (!state.referenceSelector) {
+                        state.referenceSelector = new ReferenceObjectSelector(API_URL);
+                    }
+
+                    // Show first frame for reference object selection
+                    await state.referenceSelector.showFirstFrame(data.filename);
+
+                    // Process button will be enabled after reference object is confirmed
+                    // (handled in reference_selector.js)
                 } else {
                     throw new Error(data.message || 'Upload failed');
                 }
             } catch (error) {
-                showAlert('error', `❌ Upload failed: ${error.message}`);
+                showAlert('error', `Upload failed: ${error.message}`);
                 uploadBtn.disabled = false;
                 hideProgress();
             }
@@ -1070,12 +873,6 @@
 
             processBtn.disabled = true;
             showProgress('Starting processing...', 0);
-            
-            // Clear previous results for fresh real-time updates
-            state.detectedPeople.clear();
-            state.analytics = { totalPeople: 0, peopleTapped: 0, peopleNotTapped: 0 };
-            document.getElementById('peopleList').innerHTML = '';
-            updateAnalytics();
 
             try {
                 const response = await fetch(
@@ -1087,17 +884,15 @@
 
                 if (data.status === 'success') {
                     state.currentExperimentFolder = data.experiment_folder;
-                    console.log('📁 Experiment folder:', state.currentExperimentFolder);
-                    
-                    // Update any people that don't have frames loaded yet
                     displayResults(data.results);
                     setupDownloadButtons(data.output_video, data.results_file);
-                    showAlert('success', '✅ Processing complete!');
+                    showAlert('success', 'Processing complete!');
+                    loadLogs();
                 } else {
                     throw new Error(data.message || 'Processing failed');
                 }
             } catch (error) {
-                showAlert('error', `❌ Processing failed: ${error.message}`);
+                showAlert('error', `Processing failed: ${error.message}`);
             } finally {
                 processBtn.disabled = false;
                 hideProgress();
@@ -1131,30 +926,47 @@
 
         function displayResults(results) {
             document.getElementById('resultsSection').style.display = 'block';
-            
-            // Merge final results with real-time detected people
-            results.people.forEach(person => {
-                // Update or add person to state
-                const existingPerson = state.detectedPeople.get(person.track_id);
-                if (existingPerson) {
-                    // Merge data - keep real-time updates but add any missing info
-                    Object.assign(existingPerson, person);
-                    renderPerson(existingPerson);
-                } else {
-                    // Add new person (in case WebSocket missed it)
-                    state.detectedPeople.set(person.track_id, person);
-                    renderPerson(person);
-                }
-            });
-            
-            // Final analytics update
-            state.analytics.totalPeople = results.summary.total_people;
-            state.analytics.peopleTapped = results.summary.people_tapped;
-            state.analytics.peopleNotTapped = results.summary.people_not_tapped;
-            updateAnalytics();
 
-            // Scroll to results
-            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('totalPeople').textContent = results.summary.total_people;
+            document.getElementById('peopleTapped').textContent = results.summary.people_tapped;
+            document.getElementById('peopleNotTapped').textContent = results.summary.people_not_tapped;
+
+            const peopleList = document.getElementById('peopleList');
+            peopleList.innerHTML = '';
+
+            results.people.forEach(person => {
+                const personCard = document.createElement('div');
+                personCard.className = 'person-card';
+
+                const rgb = `rgb(${person.color_rgb.join(',')})`;
+                const statusClass = person.tapped ? 'status-tapped' : 'status-not-tapped';
+                const statusText = person.tapped ? '✓ TAPPED' : '✗ NOT TAPPED';
+                const tapFrameInfo = person.tapped ? ` | Tapped at frame ${person.tap_frame}` : '';
+                const firstSeenInfo = `First seen at frame ${person.first_seen_frame}`;
+
+                // Generate frame thumbnail URL if we have experiment folder
+                let thumbnailHTML = '';
+                if (state.currentExperimentFolder) {
+                    // Try to find a frame image for this person
+                    const frameFilename = `frame_${String(person.first_seen_frame).padStart(6, '0')}_person_${person.track_id}.png`;
+                    const frameURL = `${API_URL}/api/frame/${state.currentExperimentFolder}/${frameFilename}`;
+                    thumbnailHTML = `<img src="${frameURL}" class="frame-thumbnail" onclick="showFrameModal('${frameURL}')" onerror="this.style.display='none'" alt="Frame ${person.first_seen_frame}" title="Click to enlarge">`;
+                }
+
+                personCard.innerHTML = `
+                    <div class="person-info">
+                        ${thumbnailHTML}
+                        <div class="color-indicator" style="background: ${rgb};"></div>
+                        <div class="person-details">
+                            <h4>${person.color} Box (ID: ${person.track_id})</h4>
+                            <p>${firstSeenInfo} | Tracked for ${person.total_frames_tracked} frames${tapFrameInfo}</p>
+                        </div>
+                    </div>
+                    <div class="status-badge ${statusClass}">${statusText}</div>
+                `;
+
+                peopleList.appendChild(personCard);
+            });
         }
 
         function setupDownloadButtons(videoFilename, resultsFilename) {
@@ -1171,7 +983,7 @@
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type}`;
             alertDiv.textContent = message;
-            
+
             document.querySelector('.upload-section').insertBefore(
                 alertDiv,
                 document.querySelector('.upload-section').firstChild
@@ -1180,13 +992,80 @@
             setTimeout(() => alertDiv.remove(), 5000);
         }
 
+        async function loadLogs() {
+            try {
+                const response = await fetch(`${API_URL}/api/logs?limit=100`);
+                const data = await response.json();
+
+                const logsSection = document.getElementById('logsSection');
+                const logFileName = document.getElementById('logFileName');
+
+                // Update log file info
+                if (data.log_file) {
+                    logFileName.textContent = data.log_file;
+                } else {
+                    logFileName.textContent = 'No events yet';
+                }
+
+                logsSection.innerHTML = '';
+
+                if (!data.logs || data.logs.length === 0) {
+                    logsSection.innerHTML = '<p style="text-align: center; color: #888;">No event logs yet</p>';
+                    return;
+                }
+
+                // Display events in reverse order (newest first)
+                data.logs.reverse().forEach(log => {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+
+                    const config = EVENT_CONFIG[log.event_type] || { icon: '🔵', color: '#667eea' };
+                    logEntry.style.borderLeftColor = config.color;
+
+                    // Extract frame number and track ID from log message
+                    let frameNumber = null;
+                    let trackId = null;
+                    const frameMatch = log.message.match(/frame (\d+)/);
+                    const idMatch = log.message.match(/Person ID (\d+)/);
+
+                    if (frameMatch) frameNumber = frameMatch[1];
+                    if (idMatch) trackId = idMatch[1];
+
+                    // Generate frame thumbnail if we have the data and experiment folder
+                    let thumbnailHTML = '';
+                    if (state.currentExperimentFolder && frameNumber && trackId) {
+                        const frameFilename = `frame_${String(frameNumber).padStart(6, '0')}_person_${trackId}.png`;
+                        const frameURL = `${API_URL}/api/frame/${state.currentExperimentFolder}/${frameFilename}`;
+                        thumbnailHTML = `<img src="${frameURL}" class="log-thumbnail" onclick="showFrameModal('${frameURL}')" onerror="this.style.display='none'" alt="Frame ${frameNumber}" title="Click to enlarge - Frame ${frameNumber}">`;
+                    }
+
+                    logEntry.innerHTML = `
+                        ${thumbnailHTML}
+                        <div class="log-text-content">
+                            <div class="log-timestamp">${log.timestamp}</div>
+                            <div class="log-content">
+                                ${config.icon} ${log.message}
+                            </div>
+                        </div>
+                    `;
+
+                    logsSection.appendChild(logEntry);
+                });
+            } catch (error) {
+                console.error('Failed to load event logs:', error);
+            }
+        }
+
+        // Load logs on page load
+        loadLogs();
+        setInterval(loadLogs, 10000); // Refresh every 10 seconds
+
         // Modal functions for frame viewing
         function showFrameModal(imageUrl) {
             const modal = document.getElementById('frameModal');
             const modalImg = document.getElementById('modalImage');
             modal.style.display = 'block';
             modalImg.src = imageUrl;
-            console.log('🔍 Opening modal with image:', imageUrl);
         }
 
         function closeFrameModal() {
@@ -1194,20 +1073,12 @@
         }
 
         // Close modal when clicking outside the image
-        document.getElementById('frameModal')?.addEventListener('click', function(e) {
+        document.getElementById('frameModal')?.addEventListener('click', function (e) {
             if (e.target === this) {
                 closeFrameModal();
             }
         });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeFrameModal();
-            }
-        });
-
-        console.log('✅ Tap Detection System initialized');
     </script>
 </body>
+
 </html>
