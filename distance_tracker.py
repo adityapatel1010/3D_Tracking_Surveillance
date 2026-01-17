@@ -108,6 +108,7 @@ class DistanceBasedTracker:
                frame_number: int) -> Optional[PersonTrackingInfo]:
         """
         Update tracker with new detections and return the closest approaching person.
+        Uses sticky tracking - once someone is active, they stay active until moving away.
         
         Args:
             frame: Current frame (BGR)
@@ -174,8 +175,45 @@ class DistanceBasedTracker:
             logger.info(f"👋 Removing person {tid} (not seen for {self.max_unseen_frames} frames)")
             del self.tracked_people[tid]
         
-        # Select closest approaching person
-        closest_person = self._select_closest_approaching()
+        # Sticky tracking logic
+        closest_person = None
+        
+        # Check if current active person is still valid
+        if self.current_active_person is not None:
+            if self.current_active_person in self.tracked_people:
+                current_person = self.tracked_people[self.current_active_person]
+                
+                # Check if current person is moving away (distance increasing)
+                if len(current_person.distance_history) >= 3:
+                    recent_distances = list(current_person.distance_history)[-3:]
+                    # Check if distance is generally increasing
+                    increasing_count = sum(
+                        1 for i in range(len(recent_distances) - 1)
+                        if recent_distances[i+1] > recent_distances[i]
+                    )
+                    is_moving_away = increasing_count >= 2
+                else:
+                    is_moving_away = False
+                
+                # Keep current active person if:
+                # 1. They're still visible (frames_since_last_seen == 0)
+                # 2. They're within threshold distance
+                # 3. They're not moving away
+                if (current_person.frames_since_last_seen == 0 and 
+                    current_person.current_distance <= self.distance_threshold and
+                    not is_moving_away):
+                    closest_person = current_person
+                else:
+                    # Current person is no longer valid - release the lock
+                    if is_moving_away:
+                        logger.info(f"🚶 Person {self.current_active_person} ({current_person.color_name}) is moving away")
+                    elif current_person.current_distance > self.distance_threshold:
+                        logger.info(f"📏 Person {self.current_active_person} ({current_person.color_name}) too far away")
+                    self.current_active_person = None
+        
+        # If no active person, find a new one
+        if closest_person is None:
+            closest_person = self._select_closest_approaching()
         
         # Update active status
         for track_id, person in self.tracked_people.items():

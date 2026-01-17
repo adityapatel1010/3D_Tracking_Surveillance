@@ -173,14 +173,27 @@ class ReferenceBasedTapDetector:
                 if frames_since_last_check >= check_interval:
                     logger.info(f"🔍 Analyzing frames {frame_number - check_interval} to {frame_number}")
                     
-                    # Create annotated frame with bounding box
+                    # Create annotated frame with ALL people's bounding boxes
                     annotated_frame = frame.copy()
-                    x1, y1, x2, y2 = map(int, active_person.bbox)
-                    cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), 
-                                active_person.color, 3)
-                    cv2.putText(annotated_frame, active_person.color_name,
-                              (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                              0.6, active_person.color, 2)
+                    
+                    # Draw all tracked people with their unique colors
+                    for person_id, person in self.dist_tracker.tracked_people.items():
+                        if person.frames_since_last_seen == 0:  # Only visible people
+                            x1, y1, x2, y2 = map(int, person.bbox)
+                            
+                            # Draw bounding box
+                            thickness = 5 if person_id == active_person.track_id else 2
+                            cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), 
+                                        person.color, thickness)
+                            
+                            # Add label
+                            label = person.color_name
+                            if person_id == active_person.track_id:
+                                label += " (ACTIVE)"
+                            
+                            cv2.putText(annotated_frame, label,
+                                      (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                      0.6, person.color, 2)
                     
                     # Ask VLM if person tapped
                     tap_result = self._check_single_person_tap(
