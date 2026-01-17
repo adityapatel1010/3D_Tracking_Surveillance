@@ -531,7 +531,7 @@ async def process_video(
                 "total_frames_tracked": int(person.frame_count),
                 "first_seen_frame": int(person.first_seen_frame),
                 "min_distance": float(min(person.distance_history)) if person.distance_history else None,
-                "profile_image": f"person_{int(track_id)}_{person.color_name}.png"
+                "profile_image": f"person_{int(track_id)}.png"
             }
             results["people"].append(person_data)
         
