@@ -139,8 +139,24 @@ class ReferenceBasedTapDetector:
                         bbox = boxes.xyxy[i].cpu().numpy()
                         detections.append({
                             'track_id': track_id,
-                            'bbox': bbox.tolist()
+                            'bbox': bbox
                         })
+                        
+                        # Save frame image for each person detection (for UI/Thumbnail)
+                        # This duplicates some work but ensures we have the images frontend expects
+                        color, color_name = self.dist_tracker.get_color(track_id)
+                        color_rgb = (color[2], color[1], color[0])  # Convert BGR to RGB
+                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        
+                        self.event_logger.save_person_bbox_crop(
+                            frame_rgb=frame_rgb,  # Pass RGB frame
+                            bbox=bbox,
+                            track_id=track_id,
+                            color=color,
+                            color_name=color_name,
+                            frame_number=frame_number
+                        )
+
             
             # Update distance tracker
             active_person = self.dist_tracker.update(frame, detections, frame_number)
@@ -184,7 +200,7 @@ class ReferenceBasedTapDetector:
                     # New activation! Save snapshot
                     timestamp = datetime.now().strftime("%H%M%S")
                     filename = f"activation_id{current_id}_{active_person.color_name}_frame{frame_number}.png"
-                    filepath = self.event_logger.experiment_folder / "activations" / filename
+                    filepath = self.event_logger.experiment_folder / "annotated_frames" / filename  # Unified folder
                     
                     # Ensure directory exists
                     filepath.parent.mkdir(exist_ok=True)
@@ -257,6 +273,9 @@ class ReferenceBasedTapDetector:
                     
                     # Reset accumulation
                     frames_to_check = []
+                    
+                    # Visual separation in terminal between checks
+                    print(f"\n{'-'*70}\n")
                     frames_since_last_check = 0
             
             # Progress update
