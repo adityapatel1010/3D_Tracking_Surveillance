@@ -415,22 +415,20 @@ class SmolVLMTapDetector:
         colors_list = ", ".join(colors_order)  # Variable: Comma-separated colors (e.g., "RED, BLUE")
 
         # 1. SYSTEM PROMPT
-        system_prompt = """You are a video analysis AI.
-        TASK: Analyze the provided images and determine if a person in the bounding box TAPPED a payment terminal.
+        system_prompt = """Analyze the provided images and determine if a person in the bounding box TAPPED a payment terminal.
         DEFINITIONS:
         - True : The person's hand, phone, or card approaches the card reader.
-        - False : Standing near, walking past, reaching elsewhere, or ambiguous movements.
+        - False : Else
         
         OUTPUT FORMAT: JSON only.
-        KEYS: Exact color name (e.g. "Red").
-        VALUES: boolean (true/false).
+        KEY: Exact color of the bounding box around the person from the list of colors provided {colors_list}.
+        VALUE: boolean (true/false).
         
         EXAMPLE: 
         {"Red": true}"""
 
         # 2. USER PROMPT
         user_prompt = f"""Process these {num_frames} frames.
-        Colors: {colors_list}.
         Return JSON object with results."""
 
         # Construct messages - PREPEND system prompt to user content for better compatibility
