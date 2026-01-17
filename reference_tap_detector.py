@@ -10,6 +10,7 @@ from typing import Optional, Dict, Callable
 import torch
 import logging
 from ultralytics import RTDETR
+from datetime import datetime
 
 from depth_estimator import DepthEstimator
 from distance_tracker import DistanceBasedTracker, PersonTrackingInfo
@@ -125,7 +126,7 @@ class ReferenceBasedTapDetector:
                 conf=self.conf_threshold,
                 classes=[0],  # person class
                 verbose=False,
-                tracker="bytetrack.yaml"  # Use ByteTrack for better tracking
+                tracker="custom_bytetrack.yaml"  # Use Custom ByteTrack for stable IDs
             )
             
             # Extract detections
