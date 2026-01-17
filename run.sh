@@ -24,21 +24,12 @@ mkdir -p logs uploads outputs static
 # pip install -r requirements.txt
 
 # Run the application
-echo "Starting backend on port 8000 and frontend on port 8501..."
+echo "Starting backend on port 8501..."
 
-# Start backend in the background
-uvicorn main:app --host 0.0.0.0 --port 8501 &
-BACKEND_PID=$!
+# Start backend (serves both API and static files)
+uvicorn main:app --host 0.0.0.0 --port 8501
 
-# Start frontend 
-python -m http.server 8000
-FRONTEND_PID=$!
-
-echo "Backend running on http://localhost:8000 (PID: $BACKEND_PID)"
-echo "Frontend running on http://localhost:8501 (PID: $FRONTEND_PID)"
-echo "Press Ctrl+C to stop both servers..."
-
-# Wait for both processes
-wait $BACKEND_PID $FRONTEND_PID
-
-kill -9 $ FRONTEND_PID
+echo "Server running on http://localhost:8501"
+echo "Web Interface: http://localhost:8501"
+echo "API Documentation: http://localhost:8501/docs"
+echo "Press Ctrl+C to stop the server..."

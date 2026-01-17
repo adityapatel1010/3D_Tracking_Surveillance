@@ -99,8 +99,8 @@ class DistanceBasedTracker:
         self.get_color = get_color_for_person
         
         logger.info(f"🎯 Distance-based tracker initialized")
-        logger.info(f"   Reference centroid: {ref_centroid}")
-        logger.info(f"   Distance threshold: {distance_threshold}")
+        logger.info(f"   Reference centroid: {self.ref_centroid}")
+        logger.info(f"   Distance threshold: {self.distance_threshold}")
     
     def update(self, 
                frame: np.ndarray,
