@@ -214,14 +214,14 @@ class ReferenceBasedTapDetector:
         
         cap.release()
         
-        # Log summary
-        summary = self.dist_tracker.get_summary()
+        # Log summary - pass the actual PersonTrackingInfo objects
         self.event_logger.log_summary(
-            tracked_people={p['track_id']: p for p in summary['people']},
+            tracked_people=self.dist_tracker.tracked_people,
             total_frames=frame_number - initial_frame
         )
         
         logger.info(f"✅ Processing complete!")
+        summary = self.dist_tracker.get_summary()
         logger.info(f"   Total people: {summary['total_people']}")
         logger.info(f"   Tapped: {summary['people_tapped']}")
         
