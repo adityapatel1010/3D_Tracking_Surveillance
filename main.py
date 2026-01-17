@@ -430,7 +430,7 @@ async def process_video(
             asyncio.run_coroutine_threadsafe(broadcast_status(data), loop)
         
         # Process video with reference object
-        video_detections, tracked_people = await loop.run_in_executor(
+        video_detections, tracked_people, experiment_folder_path = await loop.run_in_executor(
             None,
             lambda: ref_detector.process_video(
                 video_path=str(video_path),
@@ -464,9 +464,9 @@ async def process_video(
             )
         )
         
-        # Create experiment folder
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        experiment_folder = EXPERIMENTS_DIR / f"ref_tracking_{timestamp}"
+        # Use the experiment folder created by reference_tap_detector
+        experiment_folder = Path(experiment_folder_path)
+        # Ensure it exists (it should, created by EventLogger)
         experiment_folder.mkdir(exist_ok=True)
         
         # Copy processed video to experiment folder

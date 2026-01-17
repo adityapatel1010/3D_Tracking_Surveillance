@@ -271,7 +271,7 @@ class ReferenceBasedTapDetector:
         
         # Log summary - pass the actual PersonTrackingInfo objects
         self.event_logger.log_summary(
-            tracked_people=self.dist_tracker.tracked_people,
+            tracked_people=self.dist_tracker.all_people_history,  # Use HISTORY, not just currently tracked
             total_frames=frame_number - initial_frame
         )
         
@@ -280,7 +280,8 @@ class ReferenceBasedTapDetector:
         logger.info(f"   Total people: {summary['total_people']}")
         logger.info(f"   Tapped: {summary['people_tapped']}")
         
-        return video_detections, self.dist_tracker.tracked_people
+        # Return detections, ALL tracked people (history), and the experiment folder path
+        return video_detections, self.dist_tracker.all_people_history, self.event_logger.experiment_folder
     
     def _check_single_person_tap(self, frame: np.ndarray, 
                                  person: PersonTrackingInfo) -> bool:

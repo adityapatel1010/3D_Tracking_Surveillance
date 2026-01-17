@@ -89,6 +89,7 @@ class DistanceBasedTracker:
         self.max_unseen_frames = max_unseen_frames
         
         self.tracked_people: Dict[int, PersonTrackingInfo] = {}
+        self.all_people_history: Dict[int, PersonTrackingInfo] = {}  # Archive of all people ever seen
         self.current_active_person: Optional[int] = None
         
         # Color assignment
@@ -149,12 +150,14 @@ class DistanceBasedTracker:
             # Update or create person tracking info
             if track_id not in self.tracked_people:
                 color, color_name = self.get_color(track_id)
-                self.tracked_people[track_id] = PersonTrackingInfo(
+                new_person = PersonTrackingInfo(
                     track_id=track_id,
                     color=color,
                     color_name=color_name,
                     first_seen_frame=frame_number
                 )
+                self.tracked_people[track_id] = new_person
+                self.all_people_history[track_id] = new_person  # Add to history immediately
                 logger.info(f"🆕 New person detected: ID {track_id} ({color_name})")
             
             person = self.tracked_people[track_id]
@@ -180,7 +183,8 @@ class DistanceBasedTracker:
             if person.frames_since_last_seen > self.max_unseen_frames
         ]
         for tid in to_remove:
-            logger.info(f"👋 Removing person {tid} (not seen for {self.max_unseen_frames} frames)")
+            logger.info(f"👋 Removing person {tid} (not seen for {self.max_unseen_frames} frames) - Kept in history")
+            # Logic: We already added them to all_people_history at creation, so just remove from active tracking
             del self.tracked_people[tid]
         
         # Zone-based selection logic
@@ -245,18 +249,28 @@ class DistanceBasedTracker:
     
     def mark_tap(self, track_id: int, frame_number: int):
         """Mark that a person has tapped."""
+        # Check active people first
         if track_id in self.tracked_people:
             person = self.tracked_people[track_id]
             person.has_tapped = True
             person.tap_frame = frame_number
             logger.info(f"✅ Person {track_id} ({person.color_name}) tapped at frame {frame_number}")
+        # Also check history (edge case where they were just removed)
+        elif track_id in self.all_people_history:
+            person = self.all_people_history[track_id]
+            person.has_tapped = True
+            person.tap_frame = frame_number
+            logger.info(f"✅ Person {track_id} ({person.color_name}) tapped at frame {frame_number} (from history)")
     
     def get_summary(self) -> Dict:
-        """Get summary of tracking results."""
+        """Get summary of tracking results using ALL history."""
+        # Use all_people_history to capture everyone ever seen
+        all_people = self.all_people_history
+        
         return {
-            'total_people': len(self.tracked_people),
-            'people_tapped': sum(1 for p in self.tracked_people.values() if p.has_tapped),
-            'people_not_tapped': sum(1 for p in self.tracked_people.values() if not p.has_tapped),
+            'total_people': len(all_people),
+            'people_tapped': sum(1 for p in all_people.values() if p.has_tapped),
+            'people_not_tapped': sum(1 for p in all_people.values() if not p.has_tapped),
             'people': [
                 {
                     'track_id': p.track_id,
@@ -269,6 +283,6 @@ class DistanceBasedTracker:
                     'last_seen_frame': p.last_seen_frame,
                     'frame_count': p.frame_count
                 }
-                for p in self.tracked_people.values()
+                for p in all_people.values()
             ]
         }
