@@ -142,20 +142,19 @@ class ReferenceBasedTapDetector:
                             'bbox': bbox
                         })
                         
-                        # Save frame image for each person detection (for UI/Thumbnail)
-                        # This duplicates some work but ensures we have the images frontend expects
-                        color, color_name = self.dist_tracker.get_color(track_id)
-                        color_rgb = (color[2], color[1], color[0])  # Convert BGR to RGB
-                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        
-                        self.event_logger.save_person_bbox_crop(
-                            frame_rgb=frame_rgb,  # Pass RGB frame
-                            bbox=bbox,
-                            track_id=track_id,
-                            color=color,
-                            color_name=color_name,
-                            frame_number=frame_number
-                        )
+                        # Only save initial frame for first detection (UI thumbnail)
+                        # Subsequent frames saved only on specific events (active/zone entry)
+                        if track_id not in self.dist_tracker.all_people_history:
+                            color, color_name = self.dist_tracker.get_color(track_id)
+                            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                            self.event_logger.save_person_bbox_crop(
+                                frame_rgb=frame_rgb,
+                                bbox=bbox,
+                                track_id=track_id, 
+                                color=color,
+                                color_name=color_name,
+                                frame_number=frame_number
+                            )
 
             
             # Update distance tracker
@@ -199,7 +198,8 @@ class ReferenceBasedTapDetector:
                 if current_id != self.last_active_id:
                     # New activation! Save snapshot
                     timestamp = datetime.now().strftime("%H%M%S")
-                    filename = f"activation_id{current_id}_{active_person.color_name}_frame{frame_number}.png"
+                    # Save as standard frame format so UI can load it if needed as a thumbnail
+                    filename = f"frame_{str(frame_number).zfill(6)}_person_{current_id}.png"
                     filepath = self.event_logger.experiment_folder / "annotated_frames" / filename  # Unified folder
                     
                     # Ensure directory exists

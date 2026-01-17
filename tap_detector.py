@@ -437,12 +437,13 @@ class SmolVLMTapDetector:
 
         # Construct messages - PREPEND system prompt to user content for better compatibility
         # Many vision models treat 'system' roles inconsistently, so explicit prepending is safer
-        combined_text = system_prompt + "\n\n" + user_prompt
         
-        # Replace the separate user_prompt text entry with combined text
-        # Remove the last added element (which was user_prompt)
-        content_for_msg = content[:-1]
-        content_for_msg.insert(0, {"type": "text", "text": combined_text})
+        # combined_text = system_prompt + "\n\n" + user_prompt
+        
+        # # Replace the separate user_prompt text entry with combined text
+        # # Remove the last added element (which was user_prompt)
+        # content_for_msg = content[:-1]
+        # content_for_msg.insert(0, {"type": "text", "text": combined_text})
         
         # Log VLM call if logger is provided
         if event_logger:
@@ -450,8 +451,12 @@ class SmolVLMTapDetector:
 
         messages = [
             {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
                 "role": "user",
-                "content": content_for_msg
+                "content": user_prompt
             }
         ]
         
