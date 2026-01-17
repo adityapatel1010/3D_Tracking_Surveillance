@@ -418,7 +418,7 @@ class SmolVLMTapDetector:
         system_prompt = """You are an AI security analyst detecting fare payment events in video frames.
         Your task is to analyze the provided images and determine if a person TAPPED a payment terminal.
         DEFINITIONS:
-        - TAP (true): The person's hand, phone, or card approaches the card reader in a deliberate payment gesture.
+        - TAP (true): The person's hand, phone, or card approaches the card reader.
         - NO TAP (false): Standing near, walking past, reaching elsewhere, or ambiguous movements.
         
         OUTPUT REQUIREMENTS:
@@ -437,13 +437,13 @@ class SmolVLMTapDetector:
 
         # Construct messages - PREPEND system prompt to user content for better compatibility
         # Many vision models treat 'system' roles inconsistently, so explicit prepending is safer
+
+        combined_text = system_prompt + "\n\n" + user_prompt
         
-        # combined_text = system_prompt + "\n\n" + user_prompt
-        
-        # # Replace the separate user_prompt text entry with combined text
-        # # Remove the last added element (which was user_prompt)
-        # content_for_msg = content[:-1]
-        # content_for_msg.insert(0, {"type": "text", "text": combined_text})
+        # Replace the separate user_prompt text entry with combined text
+        # Remove the last added element (which was user_prompt)
+        content_for_msg = content[:-1]
+        content_for_msg.insert(0, {"type": "text", "text": combined_text})
         
         # Log VLM call if logger is provided
         if event_logger:

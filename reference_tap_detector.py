@@ -143,6 +143,7 @@ class ReferenceBasedTapDetector:
                         })
                         
                         # Only save initial frame for first detection (UI thumbnail)
+                        # Only save initial frame for first detection (UI thumbnail)
                         # Subsequent frames saved only on specific events (active/zone entry)
                         if track_id not in self.dist_tracker.all_people_history:
                             color, color_name = self.dist_tracker.get_color(track_id)
@@ -155,6 +156,11 @@ class ReferenceBasedTapDetector:
                                 color_name=color_name,
                                 frame_number=frame_number
                             )
+                            # Add to tracking history ONLY after saving initial frame
+                            self.dist_tracker.all_people_history[track_id] = {
+                                'first_seen': frame_number,
+                                'color_name': color_name
+                            }
 
             
             # Update distance tracker
