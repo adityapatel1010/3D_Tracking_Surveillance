@@ -72,23 +72,20 @@ class DistanceBasedTracker:
     def __init__(self, 
                  ref_object_centroid: Tuple[int, int],
                  depth_estimator,
-                 distance_threshold: float = 0.3,
-                 approach_velocity_threshold: float = 0.01,
+                 zone_radius: float = 0.5,  # Zone in METERS (50cm default)
                  max_unseen_frames: int = 30):
         """
-        Initialize distance-based tracker.
+        Initialize zone-based tracker with depth estimation.
         
         Args:
             ref_object_centroid: (x, y) centroid of reference object
-            depth_estimator: DepthEstimator instance
-            distance_threshold: Max distance to consider for VLM analysis
-            approach_velocity_threshold: Min velocity to consider as approaching
+            depth_estimator: DepthEstimator instance for accurate 3D distance
+            zone_radius: Zone radius in METERS (default 0.5m = 50cm)
             max_unseen_frames: Max frames before removing a person
         """
         self.ref_centroid = ref_object_centroid
         self.depth_estimator = depth_estimator
-        self.distance_threshold = distance_threshold
-        self.approach_velocity_threshold = approach_velocity_threshold
+        self.zone_radius = zone_radius  # In meters
         self.max_unseen_frames = max_unseen_frames
         
         self.tracked_people: Dict[int, PersonTrackingInfo] = {}
@@ -99,17 +96,17 @@ class DistanceBasedTracker:
         self.color_palette = PERSON_COLORS
         self.get_color = get_color_for_person
         
-        logger.info(f"🎯 Distance-based tracker initialized")
+        logger.info(f"🎯 Zone-based tracker initialized (depth-aware)")
         logger.info(f"   Reference centroid: {self.ref_centroid}")
-        logger.info(f"   Distance threshold: {self.distance_threshold}")
+        logger.info(f"   Zone radius: {zone_radius}m ({zone_radius*100:.0f}cm)")
+
     
     def update(self, 
                frame: np.ndarray,
                detections: List[dict],
                frame_number: int) -> Optional[PersonTrackingInfo]:
         """
-        Update tracker with new detections and return the closest approaching person.
-        Uses sticky tracking - once someone is active, they stay active until moving away.
+        Update tracker with depth-based zone tracking.
         
         Args:
             frame: Current frame (BGR)
@@ -117,13 +114,14 @@ class DistanceBasedTracker:
             frame_number: Current frame number
         
         Returns:
-            PersonTrackingInfo of the closest approaching person, or None
+            PersonTrackingInfo of the person in the zone, or None
         """
-        # Generate depth map for this frame
+        # Generate depth map for accurate 3D distance
         depth_map = self.depth_estimator.estimate_depth(frame)
         
-        # Update all tracked people
+        # Update all tracked people and check zone membership
         detected_ids = set()
+        people_in_zone = []
         
         for detection in detections:
             track_id = detection['track_id']
@@ -137,13 +135,16 @@ class DistanceBasedTracker:
                 int((bbox[1] + bbox[3]) / 2)
             )
             
-            # Calculate 3D distance using depth
-            distance = self.depth_estimator.calculate_3d_distance(
+            # Calculate 3D distance using depth estimation
+            distance_3d = self.depth_estimator.calculate_3d_distance(
                 depth_map,
                 self.ref_centroid,
                 person_centroid,
                 focal_length=1000.0
             )
+            
+            # Check if person is in zone (depth-based)
+            in_zone = distance_3d <= self.zone_radius
             
             # Update or create person tracking info
             if track_id not in self.tracked_people:
@@ -159,13 +160,19 @@ class DistanceBasedTracker:
             person = self.tracked_people[track_id]
             person.bbox = bbox
             person.centroid = person_centroid
-            person.update_distance(distance, frame_number)
+            person.current_distance = distance_3d  # Store in meters
+            person.last_seen_frame = frame_number
+            person.frames_since_last_seen = 0
             person.frame_count += 1
+            
+            # Add to zone list if in zone
+            if in_zone:
+                people_in_zone.append((track_id, distance_3d))
         
         # Mark unseen people
         for track_id in self.tracked_people:
             if track_id not in detected_ids:
-                self.tracked_people[track_id].increment_unseen()
+                self.tracked_people[track_id].frames_since_last_seen += 1
         
         # Remove people not seen for too long
         to_remove = [
@@ -176,64 +183,39 @@ class DistanceBasedTracker:
             logger.info(f"👋 Removing person {tid} (not seen for {self.max_unseen_frames} frames)")
             del self.tracked_people[tid]
         
-        # Sticky tracking logic
-        closest_person = None
+        # Zone-based selection logic
+        active_person = None
         
-        # Check if current active person is still valid
-        if self.current_active_person is not None:
-            if self.current_active_person in self.tracked_people:
-                current_person = self.tracked_people[self.current_active_person]
-                
-                # Check if current person is moving away (distance increasing)
-                # Use more frames for stability (5 instead of 3)
-                if len(current_person.distance_history) >= 5:
-                    recent_distances = list(current_person.distance_history)[-5:]
-                    # Check if distance is generally increasing
-                    increasing_count = sum(
-                        1 for i in range(len(recent_distances) - 1)
-                        if recent_distances[i+1] > recent_distances[i]
-                    )
-                    # Require at least 3 out of 4 transitions to be increasing
-                    is_moving_away = increasing_count >= 3
+        if len(people_in_zone) > 0:
+            # If someone is already active and still in zone, keep them
+            if self.current_active_person is not None:
+                active_still_in_zone = any(tid == self.current_active_person for tid, _ in people_in_zone)
+                if active_still_in_zone and self.current_active_person in self.tracked_people:
+                    active_person = self.tracked_people[self.current_active_person]
+                    # Less verbose logging for continuous tracking
                 else:
-                    is_moving_away = False
-                
-                # Keep current active person if:
-                # 1. They're still visible (frames_since_last_seen == 0)
-                # 2. They're within threshold distance
-                # 3. They're not moving away
-                if (current_person.frames_since_last_seen == 0 and 
-                    current_person.current_distance <= self.distance_threshold and
-                    not is_moving_away):
-                    closest_person = current_person
-                else:
-                    # Current person is no longer valid - release the lock
-                    if is_moving_away:
-                        logger.info(f"🚶 Person {self.current_active_person} ({current_person.color_name}) is moving away")
-                    elif current_person.current_distance > self.distance_threshold:
-                        logger.info(f"📏 Person {self.current_active_person} ({current_person.color_name}) too far away")
+                    # Active person left zone
+                    if self.current_active_person in self.tracked_people:
+                        dist = self.tracked_people[self.current_active_person].current_distance
+                        logger.info(f"🚶 Person {self.current_active_person} left zone (now {dist:.2f}m = {dist*100:.0f}cm)")
                     self.current_active_person = None
+            
+            # If no active person, select closest one in zone
+            if active_person is None:
+                # Sort by distance, pick closest
+                people_in_zone.sort(key=lambda x: x[1])
+                closest_id = people_in_zone[0][0]
+                closest_dist = people_in_zone[0][1]
+                active_person = self.tracked_people[closest_id]
+                self.current_active_person = closest_id
+                logger.info(f"🎯 Person {closest_id} ({active_person.color_name}) entered zone: {closest_dist:.2f}m ({closest_dist*100:.0f}cm)")
+        else:
+            # No one in zone
+            if self.current_active_person is not None:
+                logger.info(f"📍 Zone empty (all outside {self.zone_radius}m)")
+                self.current_active_person = None
         
-        # If no active person, find a new one
-        if closest_person is None:
-            closest_person = self._select_closest_approaching()
-        
-        # Update active status
-        for track_id, person in self.tracked_people.items():
-            person.is_active = (closest_person is not None and 
-                              track_id == closest_person.track_id)
-        
-        # Log if active person changed
-        new_active_id = closest_person.track_id if closest_person else None
-        if new_active_id != self.current_active_person:
-            if new_active_id is not None:
-                logger.info(f"🎯 Active person changed to: ID {new_active_id} "
-                          f"({closest_person.color_name}, distance={closest_person.current_distance:.3f})")
-            else:
-                logger.info(f"📍 No active person (all too far or moving away)")
-            self.current_active_person = new_active_id
-        
-        return closest_person
+        return active_person
     
     def _select_closest_approaching(self) -> Optional[PersonTrackingInfo]:
         """Select the closest approaching person for analysis."""

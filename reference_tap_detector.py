@@ -27,14 +27,14 @@ class ReferenceBasedTapDetector:
     def __init__(self,
                  rtdetr_model: str = "rtdetr-x.pt",
                  conf_threshold: float = 0.7,
-                 distance_threshold: float = 0.3):
+                 zone_radius: float = 0.5):
         """
         Initialize the reference-based tap detector.
         
         Args:
             rtdetr_model: Path to RT-DETR model
             conf_threshold: Detection confidence threshold
-            distance_threshold: Max distance from reference object
+            zone_radius: Zone radius in METERS around reference object (default 0.5m = 50cm)
         """
         logger.info("🚀 Initializing Reference-Based Tap Detection System")
         
@@ -52,7 +52,7 @@ class ReferenceBasedTapDetector:
         self.depth_estimator: Optional[DepthEstimator] = None
         self.event_logger: Optional[EventLogger] = None
         
-        self.distance_threshold = distance_threshold
+        self.zone_radius = zone_radius
         
         logger.info("✅ Reference-Based Tap Detector initialized")
     
@@ -86,7 +86,7 @@ class ReferenceBasedTapDetector:
         self.dist_tracker = DistanceBasedTracker(
             ref_object_centroid=ref_object.centroid,
             depth_estimator=depth_estimator,
-            distance_threshold=self.distance_threshold
+            zone_radius=self.zone_radius
         )
         
         # Initialize event logger
@@ -340,6 +340,10 @@ def visualize_reference_tracking(video_path: str,
             cv2.circle(frame, (ref_x, ref_y), 15, (0, 0, 255), -1)
             cv2.putText(frame, "REFERENCE", (ref_x - 40, ref_y - 20),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            
+            # NOTE: ALL people are being tracked in the background by RT-DETR
+            # We only draw the bounding box for the active person (in zone)
+            # This keeps the visualization clean while maintaining full tracking data
             
             # Draw ONLY the active person with their colored bounding box
             if det['active_person'] is not None:

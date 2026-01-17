@@ -415,7 +415,7 @@ class SmolVLMTapDetector:
 
         DEFINITION OF “TAPPED” (be strict):
         Mark a person as TAPPED only if, in at least one frame, you clearly see ALL of:
-        1) The person’s hand/arm extends toward the fare reader
+        1) The person's hand/arm extends toward the fare reader
         2) The hand/card/phone touches the reader OR is within ~2 inches of it
         3) The motion is a clear payment gesture (not just standing near, walking by, or reaching elsewhere)
 
