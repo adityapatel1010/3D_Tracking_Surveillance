@@ -449,14 +449,20 @@ class SmolVLMTapDetector:
         if event_logger:
             event_logger.log_vlm_call(check_number, frame_numbers or list(range(len(frames))), person_colors, combined_text)
 
+        # Re-construct user content to ensure it has images AND text
+        user_content_list = []
+        for _ in pil_frames:
+            user_content_list.append({"type": "image"})
+        user_content_list.append({"type": "text", "text": user_prompt})
+
         messages = [
             {
                 "role": "system",
-                "content": system_prompt
+                "content": [{"type": "text", "text": system_prompt}]
             },
             {
                 "role": "user",
-                "content": user_prompt
+                "content": user_content_list
             }
         ]
         
