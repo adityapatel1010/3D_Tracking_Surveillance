@@ -956,7 +956,7 @@
                 personCard.innerHTML = `
                     <div class="person-info">
                         ${thumbnailHTML}
-                        <div class="color-indicator" style="background: ${rgb};"></div>
+                        <div class="color-indicator" style="background: ${person.color.toLowerCase()}; border-color: ${rgb};"></div>
                         <div class="person-details">
                             <h4>${person.color} Box (ID: ${person.track_id})</h4>
                             <p>${firstSeenInfo} | Tracked for ${person.total_frames_tracked} frames${tapFrameInfo}</p>
