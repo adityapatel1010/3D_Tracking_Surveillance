@@ -278,7 +278,7 @@ class EventLogger:
             
             # Convert to BGR and save
             frame_bgr = cv2.cvtColor(frame_with_bbox, cv2.COLOR_RGB2BGR)
-            frame_filename = f"frame_{str(frame_number).zfill(6)}_person_{track_id}.png"
+            frame_filename = f"person_{track_id}_{color_name}.png"
             frame_path = self.frames_folder / frame_filename
             
             # Ensure folder exists (critical!)
@@ -426,7 +426,7 @@ class SmolVLMTapDetector:
         DEFINITION OF “TAPPED” (be strict):
         Mark a person as TAPPED only if, in at least one frame, you clearly see ALL of:
         1) The person's hand/arm extends toward the fare reader
-        2) The hand/card/phone touches the reader OR is within ~2 inches of it
+        2) The hand/card/phone touches the reader OR is within 2 cm of it
         3) The motion is a clear payment gesture (not just standing near, walking by, or reaching elsewhere)
 
         NOT A TAP (always NOT TAPPED):
@@ -439,11 +439,11 @@ class SmolVLMTapDetector:
         ANTI-BIAS RULES (mandatory):
         - Do NOT guess based on who is closest to the reader.
         - Do NOT infer a tap from posture alone.
-        - If you cannot clearly verify contact/within-2-inches + a payment gesture, output NOT TAPPED.
+        - If you cannot clearly verify contact/within 2 cm + a payment gesture, output NOT TAPPED.
 
         OUTPUT FORMAT (exactly two lines, nothing else):
-        TAPPED: [comma-separated list of COLOR OR NONE]
-        NOT TAPPED: [comma-separated list of COLOR OR NONE]
+        TAPPED: [name of COLOR OR NONE]
+        NOT TAPPED: [name of COLOR OR NONE]
 
         Strictly follow this CONSTRAINTS:
         - Each color must appear in exactly ONE category (TAPPED or NOT TAPPED)

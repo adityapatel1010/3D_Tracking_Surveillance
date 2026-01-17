@@ -205,7 +205,7 @@ class ReferenceBasedTapDetector:
                     # New activation! Save snapshot
                     timestamp = datetime.now().strftime("%H%M%S")
                     # Save as standard frame format so UI can load it if needed as a thumbnail
-                    filename = f"frame_{str(frame_number).zfill(6)}_person_{current_id}.png"
+                    filename = f"person_{current_id}_{active_person.color_name}.png"
                     filepath = self.event_logger.experiment_folder / "annotated_frames" / filename  # Unified folder
                     
                     # Ensure directory exists
