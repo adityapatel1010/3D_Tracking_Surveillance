@@ -117,13 +117,16 @@ class ReferenceBasedTapDetector:
             if not ret:
                 break
             
-            # Detect all people in frame
+            # Detect all people in frame with improved tracker parameters
             results = self.detector.track(
                 frame,
                 persist=True,
                 conf=self.conf_threshold,
                 classes=[0],  # person class
-                verbose=False
+                verbose=False,
+                tracker="bytetrack.yaml",  # Use ByteTrack for better tracking
+                iou=0.5,  # Higher IOU threshold for more persistent tracking
+                max_age=60  # Keep tracks alive for 60 frames without detection
             )
             
             # Extract detections
@@ -141,6 +144,14 @@ class ReferenceBasedTapDetector:
             
             # Update distance tracker
             active_person = self.dist_tracker.update(frame, detections, frame_number)
+            
+            # Debug logging - show all people and their status
+            if frame_number % 30 == 0:  # Every 30 frames
+                logger.info(f"📊 Frame {frame_number} - People status:")
+                for pid, person in self.dist_tracker.tracked_people.items():
+                    status = "✅ ACTIVE" if active_person and pid == active_person.track_id else "⬜ inactive"
+                    approaching = "→" if person.is_approaching else "↔"
+                    logger.info(f"   ID {pid} ({person.color_name}): {person.current_distance:.3f}m {approaching} {status}")
             
             # Check if active person changed
             if active_person != current_active_person:
@@ -312,6 +323,10 @@ def visualize_reference_tracking(video_path: str,
     cap.set(cv2.CAP_PROP_POS_FRAMES, initial_frame)
     frame_number = initial_frame
     
+    # Counters for logging
+    frames_with_active = 0
+    boxes_drawn_count = 0
+    
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -328,6 +343,7 @@ def visualize_reference_tracking(video_path: str,
             
             # Draw ONLY the active person with their colored bounding box
             if det['active_person'] is not None:
+                frames_with_active += 1
                 person_id = det['active_person']
                 if person_id in tracked_people:
                     person = tracked_people[person_id]
@@ -335,6 +351,7 @@ def visualize_reference_tracking(video_path: str,
                     
                     # Draw colored bounding box (thick)
                     cv2.rectangle(frame, (x1, y1), (x2, y2), person.color, 4)
+                    boxes_drawn_count += 1
                     
                     # Create label with distance
                     label = f"{person.color_name} - {det['active_distance']:.3f}m"
@@ -358,3 +375,5 @@ def visualize_reference_tracking(video_path: str,
     out.release()
     
     logger.info(f"✅ Visualization complete: {output_path}")
+    logger.info(f"   Frames with active person: {frames_with_active}/{frame_number - initial_frame}")
+    logger.info(f"   Frames with bounding boxes drawn: {boxes_drawn_count}")
