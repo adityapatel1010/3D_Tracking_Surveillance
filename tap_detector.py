@@ -29,10 +29,17 @@ DEFAULT_CONF_THRESHOLD = 0.7
 DEFAULT_FRAMES_PER_CHECK = 3
 
 # Visual configuration
+# Visual configuration - COLORS IN BGR FORMAT for OpenCV
 PERSON_COLORS = [
-    (255, 0, 0), (0, 255, 0), (0, 0, 255),
-    (255, 255, 0), (255, 0, 255), (0, 255, 255),
-    (128, 0, 0), (0, 128, 0), (0, 0, 128)
+    (0, 0, 255),    # Red
+    (0, 255, 0),    # Green
+    (255, 0, 0),    # Blue
+    (0, 255, 255),  # Yellow
+    (255, 0, 255),  # Magenta
+    (255, 255, 0),  # Cyan
+    (0, 0, 128),    # Maroon
+    (0, 128, 0),    # DarkGreen
+    (128, 0, 0)     # Navy
 ]
 COLOR_NAMES = [
     "Red", "Green", "Blue", 
@@ -251,8 +258,11 @@ class EventLogger:
             # Create a copy of the full frame
             frame_with_bbox = frame_rgb.copy()
             
+            # Convert BGR color to RGB for drawing on RGB frame
+            color_rgb_tuple = (color[2], color[1], color[0])
+            
             # Draw the bounding box on the full frame
-            cv2.rectangle(frame_with_bbox, (x1, y1), (x2, y2), color, 4)
+            cv2.rectangle(frame_with_bbox, (x1, y1), (x2, y2), color_rgb_tuple, 4)
             
             # Add color label at the top of bounding box
             label = f"{color_name}"
@@ -261,7 +271,7 @@ class EventLogger:
             cv2.rectangle(frame_with_bbox,
                         (x1, y1 - text_height - 10),
                         (x1 + text_width + 10, y1),
-                        color, -1)
+                        color_rgb_tuple, -1)
             cv2.putText(frame_with_bbox, label, 
                       (x1 + 5, y1 - 5),
                       font, 0.8, (255, 255, 255), 2)
@@ -583,7 +593,8 @@ class MultiPersonTapTracker:
                     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     self.event_logger.save_person_bbox_crop(frame_rgb, bbox, track_id, color, color_name, initial_frame)
                     # Pass color RGB for frontend display
-                    self.event_logger.log_new_person(track_id, color_name, initial_frame, is_initial=True, color_rgb=color)
+                    color_rgb = (color[2], color[1], color[0])
+                    self.event_logger.log_new_person(track_id, color_name, initial_frame, is_initial=True, color_rgb=color_rgb)
 
         return len(self.tracked_people)
 
@@ -644,7 +655,8 @@ class MultiPersonTapTracker:
                         if self.event_logger:
                             # Save cropped bbox image for this person
                             self.event_logger.save_person_bbox_crop(frame_rgb, box, track_id, color, color_name, frame_idx)
-                            self.event_logger.log_new_person(track_id, color_name, frame_idx, is_initial=False, color_rgb=color)
+                            color_rgb = (color[2], color[1], color[0])
+                            self.event_logger.log_new_person(track_id, color_name, frame_idx, is_initial=False, color_rgb=color_rgb)
 
                     current_detections[track_id] = {
                         'bbox': box,

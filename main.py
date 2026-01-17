@@ -489,7 +489,7 @@ async def process_video(
             f.write(f"  - Area: {ref_object.area} pixels\n\n")
             f.write("PROCESSING PARAMETERS:\n")
             f.write(f"  - Confidence Threshold: {conf_threshold}\n")
-            f.write(f"  - Distance Threshold: {distance_threshold}\n")
+            f.write(f"  - Zone Radius: {zone_radius}m ({zone_radius*100:.0f}cm)\n")
             f.write(f"  - Check Interval: {check_interval}\n")
             f.write(f"  - Initial Frame: {initial_frame}\n\n")
             f.write("FOLDER CONTENTS:\n")
