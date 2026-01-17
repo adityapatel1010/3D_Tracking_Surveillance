@@ -124,9 +124,7 @@ class ReferenceBasedTapDetector:
                 conf=self.conf_threshold,
                 classes=[0],  # person class
                 verbose=False,
-                tracker="bytetrack.yaml",  # Use ByteTrack for better tracking
-                iou=0.5,  # Higher IOU threshold for more persistent tracking
-                max_age=60  # Keep tracks alive for 60 frames without detection
+                tracker="bytetrack.yaml"  # Use ByteTrack for better tracking
             )
             
             # Extract detections
