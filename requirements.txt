@@ -1,0 +1,27 @@
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Computer Vision & ML
+opencv-python>=4.8.0
+numpy>=1.24.0
+torch>=2.0.0
+ultralytics>=8.0.0
+pillow>=10.0.0
+segment-anything>=1.0
+timm>=0.9.0
+scipy>=1.10.0
+
+# Depth Estimation
+depth-anything-v2
+
+# Data Processing
+matplotlib>=3.7.0
+
+# Jupyter (for IPython display)
+ipython>=8.12.0
+streamlit
+transformers
+accelerate
+hf_transfer
