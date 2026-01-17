@@ -343,9 +343,12 @@ Answer with ONLY "YES" or "NO"."""
                 frame_numbers=[0]
             )
             
-            # Parse response - Update legacy key check
-            if person.track_id in response and response[person.track_id].get('is_tapping'):
-                return True
+            # Parse response
+            # detect_tap_multi_frame returns format: {person_id: {'is_tapping': bool, ...}}
+            if person.track_id in response:
+                result = response[person.track_id]
+                return result.get('is_tapping', False)
+            return False
             
         except Exception as e:
             logger.error(f"VLM check failed: {e}")

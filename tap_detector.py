@@ -414,60 +414,53 @@ class SmolVLMTapDetector:
         colors_order = list(person_colors.values())  # e.g. ["GREEN","YELLOW"] or ["YELLOW"]
         colors_list = ", ".join(colors_order)  # Variable: Comma-separated colors (e.g., "RED, BLUE")
 
-        # 1. SYSTEM PROMPT
-        system_prompt = """Analyze the provided images and determine if a person in the bounding box TAPPED a payment terminal.
-        DEFINITIONS:
-        - True : The person's hand, phone, or card approaches the card reader.
-        - False : Else
-        
-        OUTPUT FORMAT: JSON only.
-        KEY: Exact color of the bounding box around the person from the list of colors provided {colors_list}.
-        VALUE: boolean (true/false).
-        
-        EXAMPLE: 
-        {"Red": true}"""
+        prompt_text = f"""
+        You are analyzing {num_frames} security camera frames.
 
-        # 2. USER PROMPT
-        user_prompt = f"""Process these {num_frames} frames.
-        Return JSON object with results."""
+        Person is identified ONLY by the colored bounding box around them.
+        VALID COLORS (use ONLY these): {colors_list}
 
-        # Construct messages - PREPEND system prompt to user content for better compatibility
-        # Many vision models treat 'system' roles inconsistently, so explicit prepending is safer
+        TASK:
+        Determine whether each color-box person TAPPED the fare payment reader.
 
-        combined_text = system_prompt + "\n\n" + user_prompt
-        
-        # Replace the separate user_prompt text entry with combined text
-        # Remove the last added element (which was user_prompt)
-        content_for_msg = content[:-1]
-        content_for_msg.insert(0, {"type": "text", "text": combined_text})
+        DEFINITION OF “TAPPED” (be strict):
+        Mark a person as TAPPED only if, in at least one frame, you clearly see ALL of:
+        1) The person's hand/arm extends toward the fare reader
+        2) The hand/card/phone touches the reader OR is within ~2 inches of it
+        3) The motion is a clear payment gesture (not just standing near, walking by, or reaching elsewhere)
+
+        NOT A TAP (always NOT TAPPED):
+        - Simply standing closest to the reader
+        - Walking past the reader
+        - Hand not extended toward the reader
+        - Reader is not clearly visible / interaction is occluded
+        - Unclear distance or uncertain contact
+
+        ANTI-BIAS RULES (mandatory):
+        - Do NOT guess based on who is closest to the reader.
+        - Do NOT infer a tap from posture alone.
+        - If you cannot clearly verify contact/within-2-inches + a payment gesture, output NOT TAPPED.
+
+        OUTPUT FORMAT (exactly two lines, nothing else):
+        TAPPED: [comma-separated list of COLOR OR NONE]
+        NOT TAPPED: [comma-separated list of COLOR OR NONE]
+
+        Strictly follow this CONSTRAINTS:
+        - Each color must appear in exactly ONE category (TAPPED or NOT TAPPED)
+        - If TAPPED is NONE, then NOT TAPPED must list ALL colors: {colors_list}
+        - If NOT TAPPED is NONE, then TAPPED must list ALL colors: {colors_list}
+
+        Now analyze the frames and respond in the required format.
+        """.strip()
+
+        content.append({"type": "text", "text": prompt_text})
         
         # Log VLM call if logger is provided
         if event_logger:
-            event_logger.log_vlm_call(check_number, frame_numbers or list(range(len(frames))), person_colors, combined_text)
+            event_logger.log_vlm_call(check_number, frame_numbers or list(range(len(frames))), person_colors, prompt_text)
 
-        # Re-construct user content to ensure it has images AND text
-        user_content_list = []
-        for _ in pil_frames:
-            user_content_list.append({"type": "image"})
-        user_content_list.append({"type": "text", "text": user_prompt})
-
-        messages = [
-            {
-                "role": "system",
-                "content": [{"type": "text", "text": system_prompt}]
-            },
-            {
-                "role": "user",
-                "content": user_content_list
-            }
-        ]
-        
-        try:
-            prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
-        except Exception as e:
-            print(f"⚠️ Chat template application failed: {e}")
-            # Fallback manual construction if template fails
-            prompt = combined_text
+        messages = [{"role": "user", "content": content}]
+        prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
 
         inputs = self.processor(text=prompt, images=pil_frames, return_tensors="pt")
 
@@ -477,7 +470,7 @@ class SmolVLMTapDetector:
         with torch.no_grad():
             output = self.model.generate(
                 **inputs,
-                max_new_tokens=100,
+                max_new_tokens=50,
                 do_sample=False,
                 temperature=0.0,
             )
@@ -489,81 +482,39 @@ class SmolVLMTapDetector:
         print(f"📥 VLM RESPONSE: {response}")
         print(f"{'='*70}\n")
 
-        # Parse JSON results
+        # Parse response
         results = {}
-        # Initialize default values
+        response_upper = response.upper().strip()
+
         for person_id in person_colors.keys():
             results[person_id] = {'is_tapping': False, 'response': response}
 
-        import json
-        import re
+        valid_colors = set(c.upper() for c in person_colors.values())
+        tapped_colors = []
 
-        try:
-            # Clean response to extract JSON block
-            json_match = re.search(r"\{.*\}", response, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                # Fix common model JSON errors: single quotes to double quotes
-                json_str = json_str.replace("'", '"')
+        lines = response_upper.split('\n')
+        for line in lines:
+            if 'TAPPED:' in line and 'NOT TAPPED:' not in line:
+                content = line.split('TAPPED:')[-1].strip()
+                content = content.replace('[', '').replace(']', '').strip()
                 
-                try:
-                    parsed_data = json.loads(json_str)
-                except json.JSONDecodeError:
-                    # Last ditch effort: simple string matching if JSON fails
-                    pass
-                else:
-                    # Normalize keys (case insensitive)
-                    parsed_data_lower = {k.lower(): v for k, v in parsed_data.items()}
-                    
-                    for person_id, color_name in person_colors.items():
-                        color_key = color_name.lower()
-                        is_tapped = False
-                        
-                        # Flexible parsing logic:
-                        # 1. Check for exact color key
-                        if color_key in parsed_data_lower:
-                            val = parsed_data_lower[color_key]
-                        # 2. Check for 'result', 'output', 'answer' keys
-                        elif 'result' in parsed_data_lower:
-                            val = parsed_data_lower['result']
-                        elif 'output' in parsed_data_lower:
-                            val = parsed_data_lower['output']
-                        # 3. Check for generic keys if single person
-                        elif len(person_colors) == 1 and ('tap' in parsed_data_lower or 'tapped' in parsed_data_lower or 'true' in parsed_data_lower):
-                             val = parsed_data_lower.get('tap') or parsed_data_lower.get('tapped') or parsed_data_lower.get('true')
-                        else:
-                            # 4. Iterate all keys to find fuzzy match
-                            val = None
-                            for k, v in parsed_data_lower.items():
-                                if color_key in k:
-                                    val = v
-                                    break
-                            
-                        if val is None:
-                            # 5. Check if the value ITSELF is the color (e.g. {"result": "red"}) - implying tap?
-                            # This is ambiguous, so safer to default None/False unless explicit
-                            pass
+                if 'NONE' not in content:
+                    parsed = [c.strip() for c in content.replace(',', ' ').split() if c.strip()]
+                    tapped_colors = [c for c in parsed if c in valid_colors]
 
-                        if val is not None:
-                            if isinstance(val, bool):
-                                is_tapped = val
-                            elif isinstance(val, str):
-                                is_tapped = val.lower() == 'true'
-                            
-                            results[person_id]['is_tapping'] = is_tapped
-                            results[person_id]['response'] = f"{color_name}: {'TAPPED' if is_tapped else 'NOT TAPPED'}"
+        for person_id, color_name in person_colors.items():
+            color_upper = color_name.upper()
+            if color_upper in tapped_colors:
+                results[person_id]['is_tapping'] = True
+                results[person_id]['response'] = f"{color_name}: TAPPED"
             else:
-                print(f"⚠️ Could not find JSON object in response: {response}")
-
-        except Exception as e:
-            print(f"❌ JSON Parsing failed: {e}")
-
+                results[person_id]['response'] = f"{color_name}: NOT TAPPED"
+        
         # Log VLM response if logger is provided
         if event_logger:
             event_logger.log_vlm_response(check_number, response, results)
 
         return results
-
 # ============================================================================
 # TRACKED PERSON DATA
 # ============================================================================
