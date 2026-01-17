@@ -416,23 +416,19 @@ class SmolVLMTapDetector:
 
         # 1. SYSTEM PROMPT
         system_prompt = """You are an AI security analyst detecting fare payment events in video frames.
-        Your task is to analyze the provided images and determine if a person TAPPED a payment terminal.
+        Your task is to analyze the provided images and determine if a person in the bounding box TAPPED a payment terminal.
         DEFINITIONS:
         - TAP (true): The person's hand, phone, or card approaches the card reader.
         - NO TAP (false): Standing near, walking past, reaching elsewhere, or ambiguous movements.
         
         OUTPUT REQUIREMENTS:
         - Output ONLY a valid JSON object.
-        - The keys must be the exact COLOR NAMES of the bounding boxes.
+        - The keys must color of the bounding box.
         - The values must be booleans (true or false).
         - Do not add markdown syntax, explanations, or extra text."""
 
         # 2. USER PROMPT
         user_prompt = f"""Analyze these {num_frames} frames.
-        People are marked with colored bounding boxes.
-        Colors to analyze: {colors_list}.
-        
-        For each color, output 'true' if they tapped, or 'false' if they did not.
         JSON Output:"""
 
         # Construct messages - PREPEND system prompt to user content for better compatibility
@@ -507,24 +503,55 @@ class SmolVLMTapDetector:
             json_match = re.search(r"\{.*\}", response, re.DOTALL)
             if json_match:
                 json_str = json_match.group(0)
-                parsed_data = json.loads(json_str)
+                # Fix common model JSON errors: single quotes to double quotes
+                json_str = json_str.replace("'", '"')
                 
-                # Normalize keys (case insensitive)
-                parsed_data_lower = {k.lower(): v for k, v in parsed_data.items()}
-                
-                for person_id, color_name in person_colors.items():
-                    color_key = color_name.lower()
-                    if color_key in parsed_data_lower:
-                        # Value should be boolean
-                        val = parsed_data_lower[color_key]
+                try:
+                    parsed_data = json.loads(json_str)
+                except json.JSONDecodeError:
+                    # Last ditch effort: simple string matching if JSON fails
+                    pass
+                else:
+                    # Normalize keys (case insensitive)
+                    parsed_data_lower = {k.lower(): v for k, v in parsed_data.items()}
+                    
+                    for person_id, color_name in person_colors.items():
+                        color_key = color_name.lower()
                         is_tapped = False
-                        if isinstance(val, bool):
-                            is_tapped = val
-                        elif isinstance(val, str):
-                            is_tapped = val.lower() == 'true'
                         
-                        results[person_id]['is_tapping'] = is_tapped
-                        results[person_id]['response'] = f"{color_name}: {'TAPPED' if is_tapped else 'NOT TAPPED'}"
+                        # Flexible parsing logic:
+                        # 1. Check for exact color key
+                        if color_key in parsed_data_lower:
+                            val = parsed_data_lower[color_key]
+                        # 2. Check for 'result', 'output', 'answer' keys
+                        elif 'result' in parsed_data_lower:
+                            val = parsed_data_lower['result']
+                        elif 'output' in parsed_data_lower:
+                            val = parsed_data_lower['output']
+                        # 3. Check for generic keys if single person
+                        elif len(person_colors) == 1 and ('tap' in parsed_data_lower or 'tapped' in parsed_data_lower or 'true' in parsed_data_lower):
+                             val = parsed_data_lower.get('tap') or parsed_data_lower.get('tapped') or parsed_data_lower.get('true')
+                        else:
+                            # 4. Iterate all keys to find fuzzy match
+                            val = None
+                            for k, v in parsed_data_lower.items():
+                                if color_key in k:
+                                    val = v
+                                    break
+                            
+                        if val is None:
+                            # 5. Check if the value ITSELF is the color (e.g. {"result": "red"}) - implying tap?
+                            # This is ambiguous, so safer to default None/False unless explicit
+                            pass
+
+                        if val is not None:
+                            if isinstance(val, bool):
+                                is_tapped = val
+                            elif isinstance(val, str):
+                                is_tapped = val.lower() == 'true'
+                            
+                            results[person_id]['is_tapping'] = is_tapped
+                            results[person_id]['response'] = f"{color_name}: {'TAPPED' if is_tapped else 'NOT TAPPED'}"
             else:
                 print(f"⚠️ Could not find JSON object in response: {response}")
 
