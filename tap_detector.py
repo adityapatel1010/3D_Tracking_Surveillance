@@ -390,10 +390,10 @@ class SmolVLMTapDetector:
 
     def __init__(self, model_name="google/gemma-3-4b-it"):
         print(f"📦 Loading {model_name}...")
-        from transformers import AutoProcessor, AutoModelForVision2Seq
+        from transformers import AutoProcessor, AutoModelForImageTextToText
 
         self.processor = AutoProcessor.from_pretrained(model_name)
-        self.model = AutoModelForVision2Seq.from_pretrained(
+        self.model = AutoModelForImageTextToText.from_pretrained(
             model_name,
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
             device_map="auto" if torch.cuda.is_available() else None
