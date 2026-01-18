@@ -492,15 +492,17 @@ class SmolVLMTapDetector:
         # Decode entire output first to see what's happening
         full_response = self.processor.decode(output[0], skip_special_tokens=True)
         
-        # Try to extract just the new text (if prompt is repeated)
-        # For some models/processors, the output includes the prompt.
-        # We'll simple log the full thing and try to parse it.
-        response = full_response.replace(prompt, "").strip()
-        
-        # Fallback if replace didn't work (e.g. special tokens handling differs)
-        if len(response) == 0 or response == full_response:
-             # Just use the full response, our parser looks for keywords check anyway
-             response = full_response
+        # Clean up response - specifically handling "model" token that might appear
+        if "model\n" in full_response:
+             response = full_response.split("model\n")[-1].strip()
+        elif "model" in full_response: # specific to gemma formatting sometimes
+             response = full_response.split("model")[-1].strip()
+        else:
+             # Try stricter prompt removal if exact match works
+             response = full_response.replace(prompt, "").strip()
+             # If that didn't help (prompt format mismatch), just keep everything
+             if len(response) > len(full_response) * 0.9: 
+                 response = full_response
 
         print(f"\n{'='*70}")
         print(f"📥 VLM RESPONSE: {response}")
