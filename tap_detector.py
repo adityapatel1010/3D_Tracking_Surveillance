@@ -14,6 +14,21 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from PIL import Image as PILImage
+import os
+from huggingface_hub import login
+
+# Log in to Hugging Face to access gated models (like Gemma 3)
+# This will use cached token or prompt if interactive
+try:
+    token = os.getenv("HF_TOKEN")
+    if token:
+        login(token=token)
+    else:
+        print("⚠️ HF_TOKEN environment variable not set. Using cached token if available.")
+        # Try login without token (uses cache)
+        login() 
+except Exception as e:
+    print(f"⚠️ HuggingFace Login warning: {e}")
 
 # ============================================================================
 # CONFIGURATION
