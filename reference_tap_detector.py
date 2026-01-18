@@ -110,6 +110,7 @@ class ReferenceBasedTapDetector:
         
         current_active_person = None
         self.last_active_id = None  # Track for activation snapshots
+        self.buffer_person_id = None # Track ID associated with buffered frames
         frames_since_last_check = 0
         
         logger.info("🎯 Starting frame-by-frame processing...")
