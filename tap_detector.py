@@ -367,14 +367,14 @@ def get_color_for_person(person_id: int) -> Tuple[Tuple[int, int, int], str]:
     return PERSON_COLORS[idx], COLOR_NAMES[idx]
 
 # ============================================================================
-# SmolVLM TAP DETECTOR
+# Gemma 3 TAP DETECTOR
 # ============================================================================
 
 class SmolVLMTapDetector:
-    """Tap detection using SmolVLM with color-coded bounding boxes"""
+    """Tap detection using Gemma 3 with color-coded bounding boxes"""
 
-    def __init__(self, model_name="HuggingFaceTB/SmolVLM-Instruct"):
-        print("📦 Loading SmolVLM...")
+    def __init__(self, model_name="google/gemma-3-4b-it"):
+        print(f"📦 Loading {model_name}...")
         from transformers import AutoProcessor, AutoModelForVision2Seq
 
         self.processor = AutoProcessor.from_pretrained(model_name)
