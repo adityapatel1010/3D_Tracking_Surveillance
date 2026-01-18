@@ -433,10 +433,9 @@ class SmolVLMTapDetector:
         You are analyzing {num_frames} security camera frames.
 
         Person is identified ONLY by the colored bounding box around them.
-        VALID COLORS (use ONLY these): {colors_list}
 
         TASK:
-        Determine whether each color-box person TAPPED the fare payment reader.
+        Determine whether the person inside bounding box TAPPED the fare payment reader.
 
         DEFINITION OF “TAPPED” (be strict):
         Mark a person as TAPPED only if, in at least one frame, you clearly see ALL of:
@@ -459,8 +458,6 @@ class SmolVLMTapDetector:
         OUTPUT FORMAT (exactly two lines, nothing else):
         TAPPED: [name of COLOR OR NONE]
         NOT TAPPED: [name of COLOR OR NONE]
-
-        Now analyze the frames and respond in the required format.
         """.strip()
 
         content.append({"type": "text", "text": prompt_text})
