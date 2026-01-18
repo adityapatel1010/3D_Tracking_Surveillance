@@ -430,12 +430,8 @@ class SmolVLMTapDetector:
         colors_list = ", ".join(colors_order)  # Variable: Comma-separated colors (e.g., "RED, BLUE")
 
         prompt_text = f"""
-        You are analyzing {num_frames} security camera frames.
-
-        Person is identified ONLY by the colored bounding box around them.
-
         TASK:
-        Determine whether the person inside bounding box TAPPED the fare payment reader.
+        From the frames determine whether the person inside bounding box TAPPED the fare payment reader.
 
         DEFINITION OF “TAPPED” (be strict):
         Mark a person as TAPPED only if, in at least one frame, you clearly see ALL of:
@@ -466,7 +462,7 @@ class SmolVLMTapDetector:
         if event_logger:
             event_logger.log_vlm_call(check_number, frame_numbers or list(range(len(frames))), person_colors, prompt_text)
 
-        messages = [{"role": "system", "content": content}]
+        messages = [{"role":"system", "content": "You are analyzing security camera frames."}{"role": "user", "content": content}]
         prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
 
         inputs = self.processor(text=prompt, images=pil_frames, return_tensors="pt")
