@@ -482,16 +482,25 @@ class SmolVLMTapDetector:
         if torch.cuda.is_available():
             inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
+        # Gemma 3 generation
         with torch.no_grad():
             output = self.model.generate(
                 **inputs,
-                max_new_tokens=50,
-                do_sample=False,
-                temperature=0.0,
+                max_new_tokens=100,
             )
 
-        generated_ids = output[0][inputs['input_ids'].shape[1]:]
-        response = self.processor.decode(generated_ids, skip_special_tokens=True)
+        # Decode entire output first to see what's happening
+        full_response = self.processor.decode(output[0], skip_special_tokens=True)
+        
+        # Try to extract just the new text (if prompt is repeated)
+        # For some models/processors, the output includes the prompt.
+        # We'll simple log the full thing and try to parse it.
+        response = full_response.replace(prompt, "").strip()
+        
+        # Fallback if replace didn't work (e.g. special tokens handling differs)
+        if len(response) == 0 or response == full_response:
+             # Just use the full response, our parser looks for keywords check anyway
+             response = full_response
 
         print(f"\n{'='*70}")
         print(f"📥 VLM RESPONSE: {response}")
