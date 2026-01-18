@@ -228,61 +228,79 @@ class ReferenceBasedTapDetector:
             else:
                 self.last_active_id = None
             
-            # Check if we should analyze with VLM
-            if active_person and not active_person.has_tapped:
-                frames_to_check.append(frame.copy())
-                frames_since_last_check += 1
-                
-                # Time to check with VLM
-                if frames_since_last_check >= check_interval:
-                    logger.info(f"🔍 Analyzing frames {frame_number - check_interval} to {frame_number}")
-                    
-                    # Create annotated frame with ALL people's bounding boxes
-                    annotated_frame = frame.copy()
-                    
-                    # Draw all tracked people with their unique colors
-                    for person_id, person in self.dist_tracker.tracked_people.items():
-                        if person.frames_since_last_seen == 0:  # Only visible people
-                            x1, y1, x2, y2 = map(int, person.bbox)
+            # Check if we need to flush buffer (Person changed or left)
+            if self.buffer_person_id is not None:
+                # Condition: Buffer person is no longer the active person
+                if active_person is None or active_person.track_id != self.buffer_person_id:
+                    # We have a buffer for a person who just left/changed
+                    if len(frames_to_check) > 0:
+                        # Retrieve the person object from tracker
+                        if self.buffer_person_id in self.dist_tracker.tracked_people:
+                            prev_person = self.dist_tracker.tracked_people[self.buffer_person_id]
                             
-                            # Draw bounding box
-                            thickness = 5 if person_id == active_person.track_id else 2
-                            cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), 
-                                        person.color, thickness)
+                            logger.info(f"⚡ Person {self.buffer_person_id} left/changed. Early VLM check on {len(frames_to_check)} frames.")
                             
-                            # Add label
-                            label = person.color_name
-                            if person_id == active_person.track_id:
-                                label += " (ACTIVE)"
+                            # Perform VLM check logic (Duplicate of main check logic)
+                            # Create annotated frame with ALL people's bounding boxes
+                            # Use the LAST frame in buffer as reference
+                            annotated_frame = frames_to_check[-1].copy()
                             
-                            cv2.putText(annotated_frame, label,
-                                      (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                                      0.6, person.color, 2)
-                    
-                    # Ask VLM if person tapped
-                    tap_result = self._check_single_person_tap(
-                        annotated_frame,
-                        active_person
-                    )
-                    
-                    if tap_result:
-                        self.dist_tracker.mark_tap(active_person.track_id, frame_number)
-                        self.event_logger.log_tap_event(
-                            track_id=active_person.track_id,
-                            color_name=active_person.color_name,
-                            frame_number=frame_number
-                        )
-                        # Highlighting tap in terminal
-                        print(f"\n{('='*50)}")
-                        print(f"✅  TAP DETECTED: Person {active_person.track_id} ({active_person.color_name})")
-                        print(f"{('='*50)}\n")
-                    
-                    # Reset accumulation
+                            for pid, p in self.dist_tracker.tracked_people.items():
+                                if p.frames_since_last_seen == 0:
+                                    x1, y1, x2, y2 = map(int, p.bbox)
+                                    thickness = 5 if pid == prev_person.track_id else 2
+                                    cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), p.color, thickness)
+                                    label = p.color_name
+                                    if pid == prev_person.track_id: label += " (Leaving)"
+                                    cv2.putText(annotated_frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, p.color, 2)
+                            
+                            tap_result = self._check_single_person_tap(annotated_frame, prev_person)
+                            
+                            if tap_result:
+                                self.dist_tracker.mark_tap(prev_person.track_id, frame_number)
+                                self.event_logger.log_tap_event(prev_person.track_id, prev_person.color_name, frame_number)
+                                print(f"\n{('='*50)}\n✅  TAP DETECTED (Early Exit): Person {prev_person.track_id}\n{('='*50)}\n")
+
+                    # Reset buffer
                     frames_to_check = []
-                    
-                    # Visual separation in terminal between checks
-                    print(f"\n{'-'*70}\n")
                     frames_since_last_check = 0
+                    self.buffer_person_id = None
+
+            # Add to buffer if active
+            if active_person and not active_person.has_tapped:
+                # Initialize buffer for new person
+                if self.buffer_person_id is None:
+                    self.buffer_person_id = active_person.track_id
+                
+                # Only accumulate if ID matches buffer
+                if active_person.track_id == self.buffer_person_id:
+                    frames_to_check.append(frame.copy())
+                    frames_since_last_check += 1
+                
+                    # Standard Interval Check
+                    if frames_since_last_check >= check_interval:
+                        logger.info(f"🔍 Analyzing frames {frame_number - check_interval} to {frame_number}")
+                        
+                        annotated_frame = frame.copy()
+                        for person_id, person in self.dist_tracker.tracked_people.items():
+                            if person.frames_since_last_seen == 0:
+                                x1, y1, x2, y2 = map(int, person.bbox)
+                                thickness = 5 if person_id == active_person.track_id else 2
+                                cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), person.color, thickness)
+                                label = person.color_name
+                                if person_id == active_person.track_id: label += " (ACTIVE)"
+                                cv2.putText(annotated_frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, person.color, 2)
+                        
+                        tap_result = self._check_single_person_tap(annotated_frame, active_person)
+                        
+                        if tap_result:
+                            self.dist_tracker.mark_tap(active_person.track_id, frame_number)
+                            self.event_logger.log_tap_event(active_person.track_id, active_person.color_name, frame_number)
+                            print(f"\n{('='*50)}\n✅  TAP DETECTED: Person {active_person.track_id} ({active_person.color_name})\n{('='*50)}\n")
+                        
+                        frames_to_check = []
+                        print(f"\n{'-'*70}\n")
+                        frames_since_last_check = 0
             
             # Progress update
             if frame_number % 100 == 0:
