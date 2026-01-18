@@ -460,11 +460,6 @@ class SmolVLMTapDetector:
         TAPPED: [name of COLOR OR NONE]
         NOT TAPPED: [name of COLOR OR NONE]
 
-        Strictly follow this CONSTRAINTS:
-        - Each color must appear in exactly ONE category (TAPPED or NOT TAPPED)
-        - If TAPPED is NONE, then NOT TAPPED must list ALL colors: {colors_list}
-        - If NOT TAPPED is NONE, then TAPPED must list ALL colors: {colors_list}
-
         Now analyze the frames and respond in the required format.
         """.strip()
 
@@ -492,17 +487,13 @@ class SmolVLMTapDetector:
         # Decode entire output first to see what's happening
         full_response = self.processor.decode(output[0], skip_special_tokens=True)
         
-        # Clean up response - specifically handling "model" token that might appear
-        if "model\n" in full_response:
-             response = full_response.split("model\n")[-1].strip()
-        elif "model" in full_response: # specific to gemma formatting sometimes
-             response = full_response.split("model")[-1].strip()
-        else:
-             # Try stricter prompt removal if exact match works
-             response = full_response.replace(prompt, "").strip()
-             # If that didn't help (prompt format mismatch), just keep everything
-             if len(response) > len(full_response) * 0.9: 
-                 response = full_response
+        # Decode entire output
+        full_response = self.processor.decode(output[0], skip_special_tokens=True)
+        
+        # We don't try to strip the prompt manually anymore.
+        # Instead, we rely on the robust parsing logic below to find the relevant lines
+        # ("TAPPED:" and "NOT TAPPED:") regardless of what precedes them.
+        response = full_response
 
         print(f"\n{'='*70}")
         print(f"📥 VLM RESPONSE: {response}")
