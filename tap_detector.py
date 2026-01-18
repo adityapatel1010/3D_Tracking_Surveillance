@@ -466,7 +466,7 @@ class SmolVLMTapDetector:
         if event_logger:
             event_logger.log_vlm_call(check_number, frame_numbers or list(range(len(frames))), person_colors, prompt_text)
 
-        messages = [{"role": "user", "content": content}]
+        messages = [{"role": "system", "content": content}]
         prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
 
         inputs = self.processor(text=prompt, images=pil_frames, return_tensors="pt")
