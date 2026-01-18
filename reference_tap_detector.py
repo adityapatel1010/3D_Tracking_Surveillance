@@ -399,11 +399,11 @@ def visualize_reference_tracking(video_path: str,
         if frame_number in video_detections:
             det = video_detections[frame_number]
             
-            # Draw reference object
-            ref_x, ref_y = ref_object.centroid
-            cv2.circle(frame, (ref_x, ref_y), 15, (0, 0, 255), -1)
-            cv2.putText(frame, "REFERENCE", (ref_x - 40, ref_y - 20),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            # Draw reference object (disabled as per user request)
+            # ref_x, ref_y = ref_object.centroid
+            # cv2.circle(frame, (ref_x, ref_y), 15, (0, 0, 255), -1)
+            # cv2.putText(frame, "REFERENCE", (ref_x - 40, ref_y - 20),
+            #            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
             
             # NOTE: ALL people are being tracked in the background by RT-DETR
             # We only draw the bounding box for the active person (in zone)
@@ -435,11 +435,11 @@ def visualize_reference_tracking(video_path: str,
                     cv2.putText(frame, label, (x1, y1 - 10),
                               cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
                     
-                    # Draw line from person to reference
-                    person_cx = (x1 + x2) // 2
-                    person_cy = (y1 + y2) // 2
-                    cv2.line(frame, (person_cx, person_cy), (ref_x, ref_y),
-                           color, 2)
+                    # Draw line from person to reference (disabled as per user request)
+                    # person_cx = (x1 + x2) // 2
+                    # person_cy = (y1 + y2) // 2
+                    # cv2.line(frame, (person_cx, person_cy), (ref_x, ref_y),
+                    #        color, 2)
                 
                 # Fallback for old logs (should not happen with new code)
                 elif person_id in tracked_people:
