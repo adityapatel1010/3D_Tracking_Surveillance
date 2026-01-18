@@ -474,7 +474,10 @@ class SmolVLMTapDetector:
         with torch.no_grad():
             output = self.model.generate(
                 **inputs,
-                max_new_tokens=100,
+                max_new_tokens=30,
+                temperature=0.0,
+                top_p=0.9,
+                top_k=10,
             )
 
         # Decode entire output first to see what's happening
