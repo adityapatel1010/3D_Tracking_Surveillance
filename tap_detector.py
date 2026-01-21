@@ -706,7 +706,8 @@ PersonKey must be ONE person and stable when Same.
         # We assume if TapEvent=YES, it applies to the active person being analyzed.
         
         is_tap_event_yes = False
-        if "TapEvent=YES" in response_upper:
+        # Check both original and upper just to be safe, but upper should match TAPEVENT=YES
+        if "TAPEVENT=YES" in response_upper:
              is_tap_event_yes = True
         
         # If old format persists or fallback needed:
