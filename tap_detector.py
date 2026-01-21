@@ -695,29 +695,30 @@ PersonKey must be ONE person and stable when Same.
         results = {}
         response_upper = response.upper().strip()
 
+        # Initialize with False
         for person_id in person_colors.keys():
             results[person_id] = {'is_tapping': False, 'response': response}
 
-        valid_colors = set(c.upper() for c in person_colors.values())
-        tapped_colors = []
-
-        lines = response_upper.split('\n')
-        for line in lines:
-            if 'TAPPED:' in line and 'NOT TAPPED:' not in line:
-                content = line.split('TAPPED:')[-1].strip()
-                content = content.replace('[', '').replace(']', '').strip()
-                
-                if 'NONE' not in content:
-                    parsed = [c.strip() for c in content.replace(',', ' ').split() if c.strip()]
-                    tapped_colors = [c for c in parsed if c in valid_colors]
+        # Check for new prompt format: "TapEvent=YES"
+        # The prompt is simplified to focus on ONE "PoF" (Person of Focus) usually, 
+        # but our tracking logic might send multiple people.
+        # However, the new prompt asks to choose ONE person. 
+        # We assume if TapEvent=YES, it applies to the active person being analyzed.
+        
+        is_tap_event_yes = False
+        if "TapEvent=YES" in response_upper:
+             is_tap_event_yes = True
+        
+        # If old format persists or fallback needed:
+        # (Legacy parsing removed as per request to avoid confusion with new strict prompt)
 
         for person_id, color_name in person_colors.items():
-            color_upper = color_name.upper()
-            if color_upper in tapped_colors:
+            if is_tap_event_yes:
                 results[person_id]['is_tapping'] = True
-                results[person_id]['response'] = f"{color_name}: TAPPED"
+                results[person_id]['response'] = f"{color_name}: TAPPED (TapEvent=YES)"
             else:
-                results[person_id]['response'] = f"{color_name}: NOT TAPPED"
+                results[person_id]['is_tapping'] = False
+                results[person_id]['response'] = f"{color_name}: NOT TAPPED (TapEvent=NO)"
         
         # Log VLM response if logger is provided
         if event_logger:
