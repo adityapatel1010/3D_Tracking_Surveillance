@@ -399,6 +399,7 @@ class SmolVLMTapDetector:
             device_map="auto" if torch.cuda.is_available() else None
         )
         self.model.eval()
+        self.is_first_inference = True
         print("✅ SmolVLM loaded")
 
     def detect_tap_multi_frame(self, frames: List[np.ndarray], person_colors: Dict[int, str], 
@@ -429,32 +430,234 @@ class SmolVLMTapDetector:
         colors_order = list(person_colors.values())  # e.g. ["GREEN","YELLOW"] or ["YELLOW"]
         colors_list = ", ".join(colors_order)  # Variable: Comma-separated colors (e.g., "RED, BLUE")
 
-        prompt_text = f"""
-        TASK:
-        From the frames determine whether the person inside bounding box TAPPED the fare payment reader.
+        TEMPLATE_PROMPT = """
+You are a fare-payment micro-action analyst. Review 6 frames (≈1 s at 6 fps).
 
-        DEFINITION OF “TAPPED” (be strict):
-        Mark a person as TAPPED only if, in at least one frame, you clearly see ALL of:
-        1) The person's hand/arm extends toward the fare reader
-        2) The hand/card/phone touches the reader OR is within 2 cm of it
-        3) The motion is a clear payment gesture (not just standing near, walking by, or reaching elsewhere)
+PERSON-OF-FOCUS (PoF):
+Choose ONE person most likely in a payment sequence (approaching reader lane OR oriented to reader with hand/arm activity). Ignore everyone else.
 
-        NOT A TAP (always NOT TAPPED):
-        - Simply standing closest to the reader
-        - Walking past the reader
-        - Hand not extended toward the reader
-        - Reader is not clearly visible / interaction is occluded
-        - Unclear distance or uncertain contact
+HARD RULES:
+- Visible evidence only. DO NOT guess.
+- Proximity NEVER implies tap.
+- Output MUST be ONE flat line (no JSON, no markdown, no backticks).
+- Every field must have exactly ONE value (no lists, no multiple evidence codes).
 
-        ANTI-BIAS RULES (mandatory):
-        - Do NOT guess based on who is closest to the reader.
-        - Do NOT infer a tap from posture alone.
-        - If you cannot clearly verify contact/within 2 cm + a payment gesture, output NOT TAPPED.
+EVIDENCE (choose EXACTLY ONE: strongest supported by these 6 frames):
+E5 = Contact+motion: visible touch/overlap AND approach→contact→withdraw (“in→touch→out”) within the 6 frames.
+E4 = Occlusion+motion: reader face occluded by hand/card AND approach into occlusion is visible within the 6 frames.
+E3 = Reach+pause: reach toward reader + brief pause near reader in ≥2 adjacent frames.
+E2 = Approaching/Reach: PoF moves into reader lane OR arm reaches toward reader area (no pause/commit).
+E1 = Near but not engaged: near reader, hands not directed toward reader.
+E0 = Cannot evaluate: reader not visible OR hands not visible OR severe blur/occlusion.
 
-        OUTPUT FORMAT (exactly two lines, nothing else):
-        TAPPED: [name of COLOR OR NONE]
-        NOT TAPPED: [name of COLOR OR NONE]
+TAP EVENT (edge-trigger, current window only):
+TapEvent=YES ONLY if Evidence is E4 or E5 AND CommitFrame is F1–F6.
+Otherwise TapEvent=NO and CommitFrame=N/A.
+
+PAID MEMORY (must start here):
+PaidMemory=YES ONLY if TapEvent=YES in this window.
+Otherwise PaidMemory=NO.
+
+FARE STATUS (your rule, state NOW):
+- If Evidence in {E1,E2,E3,E4,E5} -> FareStatus=WAITING
+- If Evidence in {E0} -> FareStatus=WAITING (default conservative) unless clear leaving is visible
+- If clear bypass/leave is visible AND Evidence in {E0,E1} -> FareStatus=NOT_TAPPED
+
+PERSON KEY (MANDATORY):
+PersonKey = stable 3-7 words, clothing/appearance only, NO digits/IDs.
+
+SUMMARY RULE:
+- ≤1 sentence about PoF only.
+- Must NOT use word “tap/tapped” unless TapEvent=YES.
+
+OUTPUT (single flat line):
+Summary=≤1 sentence;
+PersonKey=...;
+PersonSwitch=New;
+Action= Contact | Leave | Walk-away | Standing; 
+FareStatus=WAITING/NOT_TAPPED;
+Evidence=E0/E1/E2/E3/E4/E5;
+TapEvent=YES/NO;
+PaidMemory=YES/NO
+""".strip()
+
+        DELTA_PROMPT = """
+PREVIOUS_STATE:
+[PASTE FLAT LINE FROM INFERENCE #(N-1)]
+
+CURRENT 6 FRAMES (≈1 s at 6 fps):
+Update PoF only.
+
+OUTPUT: EXACTLY one line, semicolon-separated, EXACTLY these fields in this order (ONE value each):
+PersonKey=Describe physical attributes like age, clothing, ethnicity, height, build, weight, appearance etc; PersonSwitch=Same/New; Action=Contact/Leave/Walk-away/Standing; Evidence=E0/E1/E2/E3/E4/E5; TapEvent=YES/NO; PaidMemory=YES/NO; FareStatus=WAITING/PAID/NOT_TAPPED; CommitFrame=F1-F6/N/A; Cooldown=0/1/2; Summary=...
+
+NO other fields. NO JSON. NO markdown. NO quotes. No repeating instructions.
+
+STEP 0 — Parse previous (MUST)
+
+PrevPersonKey = PersonKey from PREVIOUS_STATE (if missing -> "unknown person")
+PrevPaidMemory = PaidMemory from PREVIOUS_STATE (if missing/unclear -> NO)
+PrevCooldown = Cooldown from PREVIOUS_STATE (if missing/unclear -> 0)
+PrevTapEvent = TapEvent from PREVIOUS_STATE (if missing/unclear -> NO)
+PrevFareStatus = FareStatus from PREVIOUS_STATE (if missing/unclear -> WAITING)
+PrevEvidence = Evidence from PREVIOUS_STATE (if missing/unclear -> E0)
+
+STEP 1 — PersonSwitch (STABILITY-FIRST, HARD)
+
+Default PersonSwitch=Same.
+
+Set PersonSwitch=New ONLY if BOTH are true:
+A) The current clearest hand-to-reader candidate has clearly different clothing/appearance than PrevPersonKey, AND
+B) The previous PoF is clearly gone/fully stepped aside OR is no longer the clearest candidate.
+
+If PersonSwitch=Same -> PersonKey MUST be copied EXACTLY from PREVIOUS_STATE.
+If PersonSwitch=New -> PersonKey must be 3-7 clothing words, ONE person only, no commas, no “and”, no digits, no punctuation.
+
+STEP 2 — Cooldown (MECHANICAL, AFTER PersonSwitch)
+
+Cooldown transition:
+
+If PrevCooldown=2 -> Cooldown=1
+
+If PrevCooldown=1 -> Cooldown=0
+
+If PrevCooldown=0 -> Cooldown=0
+
+If TapEvent=YES in THIS window -> Cooldown MUST be 2 (overrides above)
+
+Interpretation:
+
+Cooldown blocks retriggering TapEvent for SAME person across short windows.
+
+Cooldown MUST NOT force NOT_TAPPED by itself.
+
+STEP 3 — Visibility + physics gates (INTERNAL)
+
+HandOK = hand/phone/card trackable in ≥3 consecutive frames.
+ReaderOK = reader zone visible in ≥3 consecutive frames.
+
+If NOT (HandOK AND ReaderOK) -> Evidence cannot be E4/E5.
+
+CycleProof (VERY HARD, ALL REQUIRED IN 6 frames):
+IN: distance hand→reader decreases (approach)
+STOP: at closest point, hand/object is essentially stationary for ≥2 frames
+OUT: distance increases after STOP (withdrawal begins)
+If any phase missing -> Evidence cannot be E4/E5.
+
+NoGapProof (VERY HARD):
+To claim E5, you must see “no air gap” at closest frame (true touch).
+If overlap is only 2D/ambiguous -> treat as gap -> cannot be E5.
+
+STEP 4 — Evidence (choose EXACTLY ONE)
+
+E5 = Verified contact: HandOK & ReaderOK & CycleProof & NoGapProof.
+E4 = Verified occlusion: HandOK & ReaderOK & CycleProof & reader face is blocked by hand/card ≥1 frame at closest point.
+E3 = Hover/bypass guard: near reader but any of these: no CycleProof, smooth slide-by, no STOP, no OUT, or any visible gap/ambiguity.
+E2 = Approach/reach: moving toward reader lane but still clearly short of commit/hover.
+E1 = Near/idle: close but hands not directed to reader.
+E0 = Unknown: poor visibility.
+
+HARD BLOCKS (must obey):
+
+If PersonSwitch=Same AND PrevPaidMemory=YES -> Evidence MUST be ≤E3.
+
+If Cooldown>0 AND PersonSwitch=Same -> Evidence MUST be ≤E3.
+
+Proximity alone NEVER upgrades Evidence.
+
+STEP 5 — TapEvent (edge-trigger, strict)
+
+TapEvent=YES ONLY if ALL are true:
+
+PrevPaidMemory=NO
+
+Cooldown=0
+
+Evidence is E4 or E5
+
+You can name CommitFrame F1-F6 at the STOP/closest point
+Otherwise TapEvent=NO and CommitFrame=N/A.
+
+CommitFrame rule:
+
+If TapEvent=YES -> CommitFrame MUST be F1-F6
+
+Else -> CommitFrame=N/A
+
+STEP 6 — PaidMemory (mechanical)
+
+If PersonSwitch=Same -> PaidMemory starts as PrevPaidMemory.
+If PersonSwitch=New -> PaidMemory starts as NO.
+If TapEvent=YES -> PaidMemory becomes YES.
+Otherwise PaidMemory remains as started.
+
+STEP 7 — FareStatus (adds EVASION behavior without new fields)
+
+Definitions:
+
+PAID = paid is confirmed for this PoF (memory or event)
+
+WAITING = still in payment episode or still plausibly approaching/hovering
+
+NOT_TAPPED = EVASION / WALK-AWAY: the PoF had a plausible attempt episode and then clearly left/bypassed without a tap
+
+Rules (HARD ORDER):
+A) If PaidMemory=YES OR TapEvent=YES -> FareStatus=PAID.
+
+B) Else (unpaid):
+You may set FareStatus=NOT_TAPPED ONLY if BOTH are true:
+
+Clear walk-away/bypass is visible in THIS window (body moves away from reader area / passes reader without turning in), AND
+
+There is evidence of a payment episode either now or earlier, i.e. (Evidence in {E2,E3} OR PrevEvidence in {E2,E3} OR PrevFareStatus=WAITING).
+If condition #2 is not met -> you MUST keep FareStatus=WAITING (do not “fail” them early).
+
+C) Else -> FareStatus=WAITING.
+
+Important:
+
+NOT_TAPPED is reserved for “approached/hovered then left” (evasion), not just “person exists”.
+
+STEP 8 — Action (must align with FareStatus)
+
+Choose one Action only from: Contact / Leave / Walk-away / Standing
+
+Rules:
+
+If TapEvent=YES -> Action=Contact.
+
+Else if FareStatus=NOT_TAPPED -> Action=Walk-away.
+
+Else if clear moving away but NOT meeting NOT_TAPPED rule -> Action=Leave.
+
+Else if largely stationary in zone -> Action=Standing.
+
+Else -> Action=Standing (safest).
+
+Summary (≤10 words, PoF only)
+
+Must NOT say “tap/tapped/paid” unless FareStatus=PAID or TapEvent=YES.
+
+If FareStatus=NOT_TAPPED -> must mention “walk-away” or “bypassed”.
+
+If no meaningful change -> Summary=No meaningful change.
+
+FINAL SELF-CHECK (rewrite if violated)
+
+TapEvent=NO -> CommitFrame=N/A.
+
+TapEvent=YES -> Evidence must be E4/E5 AND PaidMemory must be YES AND Cooldown must be 2.
+
+FareStatus=NOT_TAPPED -> Action MUST be Walk-away AND PaidMemory must be NO AND TapEvent must be NO.
+
+PersonKey must be ONE person and stable when Same.
         """.strip()
+
+        if self.is_first_inference:
+            prompt_text = TEMPLATE_PROMPT
+            self.is_first_inference = False
+        else:
+            prompt_text = DELTA_PROMPT
 
         content.append({"type": "text", "text": prompt_text})
         
@@ -462,7 +665,7 @@ class SmolVLMTapDetector:
         if event_logger:
             event_logger.log_vlm_call(check_number, frame_numbers or list(range(len(frames))), person_colors, prompt_text)
 
-        messages = [{"role":"system", "content": "You are analyzing security camera frames."},{"role": "user", "content": content}]
+        messages = [{"role": "user", "content": content}]
         prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
 
         inputs = self.processor(text=prompt, images=pil_frames, return_tensors="pt")
@@ -474,20 +677,15 @@ class SmolVLMTapDetector:
         with torch.no_grad():
             output = self.model.generate(
                 **inputs,
-                max_new_tokens=50,
+                max_new_tokens=200,
                 do_sample=False,
             )
 
-        # Decode entire output first to see what's happening
-        full_response = self.processor.decode(output[0], skip_special_tokens=True)
+        generated_ids = output[0][inputs['input_ids'].shape[1]:]
+        response = self.processor.decode(generated_ids, skip_special_tokens=True)
         
-        # Decode entire output
-        full_response = self.processor.decode(output[0], skip_special_tokens=True)
-        
-        # We don't try to strip the prompt manually anymore.
-        # Instead, we rely on the robust parsing logic below to find the relevant lines
-        # ("TAPPED:" and "NOT TAPPED:") regardless of what precedes them.
-        response = full_response
+        # We also keep the robust parsing logic below to find the relevant lines
+        # ("TAPPED:" and "NOT TAPPED:") just in case there's any other noise.
 
         print(f"\n{'='*70}")
         print(f"📥 VLM RESPONSE: {response}")
